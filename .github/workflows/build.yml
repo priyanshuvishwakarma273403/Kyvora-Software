@@ -40,6 +40,9 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GYP_MSVS_VERSION: 2022
 
       - name: Build Production Binaries
         run: |
@@ -82,11 +85,13 @@ jobs:
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot rpm libx11-dev libxkbfile-dev libsecret-1-dev
+          sudo apt-get install -y fakeroot rpm libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev
 
       - name: Install dependencies
         run: |
           npm install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Production Binaries
         run: |
@@ -128,6 +133,8 @@ jobs:
       - name: Install dependencies
         run: |
           npm install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Production Binaries
         run: |
