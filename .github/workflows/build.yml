@@ -29,7 +29,6 @@ jobs:
     needs: release
     runs-on: windows-latest
     env:
-      NODE_OPTIONS: "--experimental-strip-types"
       GYP_MSVS_VERSION: "2022"
       GYP_MSVS_DIR: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
     steps:
@@ -81,8 +80,6 @@ jobs:
     name: Build Linux DEB Package
     needs: release
     runs-on: ubuntu-latest
-    env:
-      NODE_OPTIONS: "--experimental-strip-types"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -136,8 +133,6 @@ jobs:
     name: Build macOS DMG
     needs: release
     runs-on: macos-latest
-    env:
-      NODE_OPTIONS: "--experimental-strip-types"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
