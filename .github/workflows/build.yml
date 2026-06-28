@@ -30,10 +30,16 @@ jobs:
     runs-on: windows-latest
     env:
       NODE_OPTIONS: "--experimental-strip-types"
-      npm_config_msbuild_path: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise\\MSBuild\\Current\\Bin\\MSBuild.exe"
+      GYP_MSVS_VERSION: "2022"
+      GYP_MSVS_DIR: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+
+      - name: Configure Git for HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf git://github.com/
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -42,10 +48,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install
+          npm install --no-audit --no-fund
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GYP_MSVS_VERSION: 2022
 
       - name: Build Production Binaries
         run: |
@@ -82,6 +87,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Configure Git for HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf git://github.com/
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -94,7 +104,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install
+          npm install --no-audit --no-fund
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -132,6 +142,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Configure Git for HTTPS
+        run: |
+          git config --global url."https://github.com/".insteadOf git://github.com/
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -139,7 +154,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          npm install
+          npm install --no-audit --no-fund
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
