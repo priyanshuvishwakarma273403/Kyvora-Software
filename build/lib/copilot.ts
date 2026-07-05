@@ -10,6 +10,9 @@ import * as os from 'os';
 import * as path from 'path';
 import { extract } from 'tar';
 
+const root = path.dirname(path.dirname(import.meta.dirname));
+
+
 /**
  * The platforms that @github/copilot ships platform-specific packages for.
  * These are the `@github/copilot-{platform}` optional dependency packages.
@@ -337,9 +340,21 @@ function materializeBuiltInCopilotSdkPlatformFiles(copilotPackagePlatformArch: s
 		return;
 	}
 
-	const platformPackageDir = path.join(appNodeModulesDir, '@github', `copilot-${copilotPackagePlatformArch}`);
-	if (!fs.existsSync(platformPackageDir)) {
-		throw new Error(`[prepareBuiltInCopilotRipgrepShim] Copilot platform package not found at ${platformPackageDir}`);
+	const platformPackageName = `copilot-${copilotPackagePlatformArch}`;
+	const candidatePaths = [
+		path.join(appNodeModulesDir, '@github', platformPackageName),
+		path.join(root, 'node_modules', '@github', platformPackageName),
+		path.join(root, 'remote', 'node_modules', '@github', platformPackageName),
+	];
+	let platformPackageDir = '';
+	for (const p of candidatePaths) {
+		if (fs.existsSync(p)) {
+			platformPackageDir = p;
+			break;
+		}
+	}
+	if (!platformPackageDir) {
+		throw new Error(`[prepareBuiltInCopilotRipgrepShim] Copilot platform package not found. Tried paths: ${candidatePaths.join(', ')}`);
 	}
 
 	copyRequiredDirectory(

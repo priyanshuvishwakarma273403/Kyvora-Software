@@ -302,11 +302,12 @@ export function rimraf(dir: string): () => Promise<void> {
 					return c();
 				}
 
-				if (err.code === 'ENOTEMPTY' && ++retries < 5) {
-					return setTimeout(() => retry(), 10);
+				if ((err.code === 'ENOTEMPTY' || err.code === 'EBUSY' || err.code === 'EPERM') && ++retries < 10) {
+					return setTimeout(() => retry(), 100);
 				}
 
 				return e(err);
+
 			});
 		};
 

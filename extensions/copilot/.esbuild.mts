@@ -398,15 +398,18 @@ async function main() {
 		});
 		rebuild();
 	} else {
-		await Promise.all([
-			esbuild.build(nodeExtHostBuildOptions),
-			esbuild.build(webExtHostBuildOptions),
-			esbuild.build(nodeSimulationBuildOptions),
-			esbuild.build(nodeSimulationWorkbenchUIBuildOptions),
-			esbuild.build(nodeExtHostSimulationTestOptions),
-			esbuild.build(typeScriptServerPluginBuildOptions),
-			esbuild.build(webviewBuildOptions),
-		]);
+		const targets = [
+			nodeExtHostBuildOptions,
+			webExtHostBuildOptions,
+			nodeSimulationBuildOptions,
+			nodeSimulationWorkbenchUIBuildOptions,
+			nodeExtHostSimulationTestOptions,
+			typeScriptServerPluginBuildOptions,
+			webviewBuildOptions,
+		];
+		for (const target of targets) {
+			await esbuild.build(target);
+		}
 
 		// Run postinstall to copy static build assets (wasm, tiktoken, cli) to dist/.
 		// This is needed because in CI, node_modules may be restored from cache,
