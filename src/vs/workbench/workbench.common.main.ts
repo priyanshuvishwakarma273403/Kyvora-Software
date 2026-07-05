@@ -235,6 +235,7 @@ import './contrib/chat/browser/chatSessions/chatSessions.contribution.js';
 import './contrib/chat/browser/contextContrib/chatContext.contribution.js';
 import './contrib/imageCarousel/browser/imageCarousel.contribution.js';
 import './contrib/kyvoraAgents/browser/kyvoraAgents.contribution.js';
+import './contrib/kyvoraCollaboration/browser/kyvoraCollaboration.contribution.js';
 
 // Interactive
 import './contrib/interactive/browser/interactive.contribution.js';

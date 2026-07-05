@@ -353,3 +353,24 @@ body {
 	outline: 1px dashed var(--vscode-toolbar-hoverOutline);
 	outline-offset: -1px;
 }
+
+/* Kyvora Custom Sidebar View Container Icon Override */
+.monaco-workbench .activitybar .codicon-kyvora-agents-view-icon {
+	background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="50,12 83,31 83,69 50,88 17,69 17,31" stroke="%23a8a29e" stroke-width="6" stroke-linejoin="round" fill="none" /><path d="M34 26 V74 M34 50 C 45 42, 58 35, 68 28 M34 50 C 48 55, 56 66, 68 72" stroke="%23a8a29e" stroke-width="10" stroke-linecap="round" /></svg>') !important;
+	background-size: 24px 24px;
+	background-repeat: no-repeat;
+	background-position: center;
+	opacity: 0.7;
+	transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.monaco-workbench .activitybar .action-item.checked .codicon-kyvora-agents-view-icon,
+.monaco-workbench .activitybar .action-item:hover .codicon-kyvora-agents-view-icon {
+	background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="50,12 83,31 83,69 50,88 17,69 17,31" stroke="%23c084fc" stroke-width="6" stroke-linejoin="round" fill="none" /><path d="M34 26 V74 M34 50 C 45 42, 58 35, 68 28 M34 50 C 48 55, 56 66, 68 72" stroke="%23c084fc" stroke-width="10" stroke-linecap="round" /></svg>') !important;
+	opacity: 1;
+}
+
+.monaco-workbench .activitybar .codicon-kyvora-agents-view-icon::before {
+	content: "" !important;
+	display: none !important;
+}

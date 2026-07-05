@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import { spawnSync } from 'child_process';
 import path from 'path';
+import * as fs from 'fs';
 import { getChromiumSysroot, getVSCodeSysroot } from './debian/install-sysroot.ts';
 import { generatePackageDeps as generatePackageDepsDebian } from './debian/calculate-deps.ts';
 import { generatePackageDeps as generatePackageDepsRpm } from './rpm/calculate-deps.ts';
@@ -56,13 +57,22 @@ export async function getDependencies(packageType: 'deb' | 'rpm', buildDir: stri
 	const appPath = path.join(buildDir, applicationName);
 	// Add the native modules
 	const files = findResult.stdout.toString().trimEnd().split('\n');
-	// Add the tunnel binary.
-	files.push(path.join(buildDir, 'bin', product.tunnelApplicationName));
+	// Add the tunnel binary if it exists.
+	const tunnelPath = path.join(buildDir, 'bin', product.tunnelApplicationName);
+	if (fs.existsSync(tunnelPath)) {
+		files.push(tunnelPath);
+	}
 	// Add the main executable.
 	files.push(appPath);
-	// Add chrome sandbox and crashpad handler.
-	files.push(path.join(buildDir, 'chrome-sandbox'));
-	files.push(path.join(buildDir, 'chrome_crashpad_handler'));
+	// Add chrome sandbox and crashpad handler if they exist.
+	const sandboxPath = path.join(buildDir, 'chrome-sandbox');
+	if (fs.existsSync(sandboxPath)) {
+		files.push(sandboxPath);
+	}
+	const crashpadPath = path.join(buildDir, 'chrome_crashpad_handler');
+	if (fs.existsSync(crashpadPath)) {
+		files.push(crashpadPath);
+	}
 
 	// Generate the dependencies.
 	let dependencies: Set<string>[];

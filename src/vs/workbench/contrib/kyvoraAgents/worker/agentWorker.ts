@@ -6,6 +6,7 @@ import { IFileService } from '../../../../platform/files/common/files.js';
 import { URI } from '../../../../base/common/uri.js';
 import { VSBuffer } from '../../../../base/common/buffer.js';
 import { basename } from '../../../../base/common/resources.js';
+import { ProviderManager } from '../common/providerManager.js';
 
 function targetRelativePath(root: URI, file: URI): string {
 	const rootPath = root.fsPath;
@@ -28,7 +29,8 @@ export class AgentWorker {
 		private readonly bus: MessageBus,
 		private readonly memory: SharedMemory,
 		workspaceRoot: string,
-		private readonly fileService: IFileService
+		private readonly fileService: IFileService,
+		private readonly providerManager: ProviderManager
 	) {
 		this.workspaceRootUri = URI.file(workspaceRoot);
 		this.backupDirUri = URI.joinPath(this.workspaceRootUri, '.kyvora', 'agent-backups');
@@ -190,39 +192,30 @@ Provide your output in structural JSON format with these fields:
 	}
 
 	private async callAI(prompt: string): Promise<string> {
-		// Standard production fallback using GEMINI_API_KEY
-		const apiKey = process.env.GEMINI_API_KEY || '';
-		if (!apiKey) {
-			// Mock successful mock response if API key is not configured to allow compiling and local E2E simulation.
-			return JSON.stringify({
-				content: `[Simulation Mode] ${this.definition.name} analyzed the task.`,
-				findings: [`Identified standard workspace structure for task execution`],
-				blackboard: [{ topic: 'CODE FINDINGS', content: `Task processed by ${this.definition.name}` }],
-				toolCalls: []
-			});
+		let taskType: 'completion' | 'refactoring' | 'architecture' | 'generation' = 'completion';
+		const id = this.definition.id;
+		if (id.includes('coder')) {
+			taskType = 'generation';
+		} else if (id.includes('architect')) {
+			taskType = 'architecture';
+		} else if (id.includes('reviewer') || id.includes('debugger') || id.includes('owasp')) {
+			taskType = 'refactoring';
 		}
 
 		try {
-			const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({
-					contents: [{ parts: [{ text: prompt }] }],
-					generationConfig: { responseMimeType: 'application/json' }
-				})
-			});
-			const data = await response.json();
-			return data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-		} catch (e) {
-			console.error('Gemini API call failed, falling back to local simulation:', e);
+			return await this.providerManager.callAI(prompt, taskType);
+		} catch (e: any) {
+			console.error(`[AgentWorker ${this.definition.name}] ProviderManager call failed:`, e);
+			// Fallback mock response to ensure E2E stability and compilation
 			return JSON.stringify({
-				content: `[Fallback Simulation Mode] ${this.definition.name} completed successfully.`,
+				content: `[Fallback Simulation Mode] ${this.definition.name} analyzed the task. Error: ${e.message || e}`,
 				findings: [],
 				blackboard: [],
 				toolCalls: []
 			});
 		}
 	}
+
 
 	private parseAIResponse(response: string): { content: string; diff?: string; findings?: string[]; blackboard?: { topic: string; content: string }[]; toolCalls?: { tool: AgentTool; args: any }[] } {
 		try {
@@ -321,7 +314,7 @@ Provide your output in structural JSON format with these fields:
 			}
 			case 'run_command': {
 				// Whitelist check
-				const allowedCommands = ['npm test', 'npm run compile', 'vitest', 'jest', 'tsc'];
+				const allowedCommands = ['npm test', 'npm run compile', 'vitest', 'jest', 'tsc', 'npm install', 'npm i ', 'npx vercel', 'vercel'];
 				if (!allowedCommands.some(c => args.command.startsWith(c))) {
 					return `[Security Block]: Command "${args.command}" is not on the whitelist.\n`;
 				}

@@ -31,6 +31,7 @@ jobs:
     env:
       GYP_MSVS_VERSION: "2022"
       GYP_MSVS_DIR: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
+      vs2022_install: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise"
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -162,7 +163,7 @@ jobs:
           mkdir -p ../out
           export VSCODE_ARCH=x64
           export VSCODE_QUALITY=stable
-          npx tsx build/darwin/create-dmg.ts ../VSCode-darwin-x64 ../out
+          npx tsx build/darwin/create-dmg.ts .. ../out
 
       - name: Rename DMG Package
         run: |

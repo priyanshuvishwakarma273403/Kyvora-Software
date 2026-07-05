@@ -1,8 +1,3 @@
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-
 import { localize, localize2 } from '../../../../nls.js';
 import { SyncDescriptor } from '../../../../platform/instantiation/common/descriptors.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
@@ -15,12 +10,21 @@ import { KyvoraAgentHubView } from './kyvoraAgentHubView.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { Action2, registerAction2 } from '../../../../platform/actions/common/actions.js';
 import { ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../common/contributions.js';
+import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
+import { KyvoraFeatures } from './kyvoraFeatures.js';
 
 // ---- Register the DI Service ----
 registerSingleton(IKyvoraAgentService, KyvoraAgentService, InstantiationType.Delayed);
 
+// ---- Register Workbench Features Contribution ----
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+	KyvoraFeatures,
+	LifecyclePhase.Restored
+);
+
 // ---- Register the View Container (sidebar icon) ----
-Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
+const kyvoraAgentsViewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
 	id: KYVORA_AGENTS_VIEW_CONTAINER_ID,
 	title: localize2('kyvoraAgents', 'Kyvora Agents'),
 	ctorDescriptor: new SyncDescriptor(KyvoraAgentsViewPaneContainer),
@@ -46,7 +50,7 @@ viewsRegistry.registerViews([{
 	canToggleVisibility: false,
 	canMoveView: false,
 	order: 1
-}], KYVORA_AGENTS_VIEW_CONTAINER_ID);
+}], kyvoraAgentsViewContainer);
 
 viewsRegistry.registerViewWelcomeContent('kyvora.agentsOverview', {
 	content: localize('kyvoraAgents.welcome', "The Kyvora Multi-Agent system is ready.\n\nType a complex task and let specialized AI agents collaborate to solve it.\n\n[Start Agent Hub](command:kyvora.startAgentHub)"),
@@ -65,7 +69,7 @@ registerAction2(class extends Action2 {
 
 	run(accessor: ServicesAccessor): void {
 		const viewsService = accessor.get(IViewsService);
-		const view = viewsService.getActiveViewWithId<KyvoraAgentHubView>('kyvora.agentsOverview');
+		const view = viewsService.getViewWithId<KyvoraAgentHubView>('kyvora.agentsOverview');
 		if (view) {
 			view.startHub();
 		}

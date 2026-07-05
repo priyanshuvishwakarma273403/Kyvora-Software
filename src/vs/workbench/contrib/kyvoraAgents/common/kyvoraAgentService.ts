@@ -1,14 +1,9 @@
-/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
-import { IStorageService } from '../../../../platform/storage/common/storage.js';
+import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { URI } from '../../../../base/common/uri.js';
 
 import { AgentRegistry, AgentDefinition } from './agentRegistry.js';
@@ -18,6 +13,7 @@ import { ConflictResolutionService, FileConflict } from './conflictResolution.js
 import { AgentAuditLogger, AuditEntry } from './auditLogger.js';
 import { AutoReviewPipeline, AutoTestPipeline, CollaborationPipeline } from './collaborationProtocols.js';
 import { Orchestrator, TaskPlan } from '../agents/orchestrator.js';
+import { ProviderManager } from './providerManager.js';
 
 /**
  * Main Kyvora Agents Service Interface — used for DI throughout the workbench.
@@ -54,6 +50,11 @@ export interface IKyvoraAgentService {
 	getSecurityReport(sessionId: string): any;
 	generateHtmlSecurityReport(sessionId: string): string;
 
+	// Provider & Features
+	getProviderManager(): ProviderManager;
+	getFeatureState(featureId: string): boolean;
+	setFeatureState(featureId: string, enabled: boolean): void;
+
 	// Lifecycle
 	dispose(): void;
 }
@@ -75,6 +76,7 @@ export class KyvoraAgentService extends Disposable implements IKyvoraAgentServic
 	private readonly auditLogger: AgentAuditLogger;
 	private readonly reviewPipeline: AutoReviewPipeline;
 	private readonly testPipeline: AutoTestPipeline;
+	private readonly providerManager: ProviderManager;
 
 	// Events
 	private readonly _onPlanCreated = this._register(new Emitter<TaskPlan>());
@@ -108,13 +110,14 @@ export class KyvoraAgentService extends Disposable implements IKyvoraAgentServic
 		super();
 
 		const rootUri = this.workspaceContextService.getWorkspace().folders[0]?.uri || URI.file('');
-		const rootFsPath = rootUri.fsPath;
+		// Initialize ProviderManager
+		this.providerManager = new ProviderManager(this.storageService, this.fileService, rootUri);
 
 		// Initialize core components
 		this.registry = new AgentRegistry();
 		this.bus = this._register(new MessageBus(rootUri, this.fileService));
 		this.memory = new KyvoraSharedMemory(this.storageService);
-		this.orchestrator = this._register(new Orchestrator(this.registry, this.bus, this.memory, rootFsPath, this.fileService));
+		this.orchestrator = this._register(new Orchestrator(this.registry, this.bus, this.memory, rootUri.fsPath, this.fileService, this.providerManager));
 		this.conflictService = this._register(new ConflictResolutionService());
 		this.auditLogger = new AgentAuditLogger(rootUri, this.fileService);
 
@@ -230,5 +233,18 @@ export class KyvoraAgentService extends Disposable implements IKyvoraAgentServic
 
 	generateHtmlSecurityReport(sessionId: string): string {
 		return this.auditLogger.generateHtmlSecurityReport(sessionId);
+	}
+
+	getProviderManager(): ProviderManager {
+		return this.providerManager;
+	}
+
+	getFeatureState(featureId: string): boolean {
+		const val = this.storageService.get(`kyvora.feature.enabled.${featureId}`, StorageScope.WORKSPACE);
+		return val === undefined ? true : val === 'true';
+	}
+
+	setFeatureState(featureId: string, enabled: boolean): void {
+		this.storageService.store(`kyvora.feature.enabled.${featureId}`, enabled ? 'true' : 'false', StorageScope.WORKSPACE, StorageTarget.MACHINE);
 	}
 }

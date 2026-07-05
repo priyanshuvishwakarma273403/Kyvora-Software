@@ -49,3 +49,6 @@ dist
 .agents/skills/.local/
 
 .git-backup/
+
+.env
+.env.*

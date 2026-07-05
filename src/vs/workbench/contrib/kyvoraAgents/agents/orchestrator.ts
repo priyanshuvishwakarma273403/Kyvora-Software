@@ -10,6 +10,7 @@ import { AgentWorker } from '../worker/agentWorker.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
+import { ProviderManager } from '../common/providerManager.js';
 
 export interface Subtask {
 	id: string;
@@ -60,7 +61,8 @@ export class Orchestrator extends Disposable {
 		private readonly bus: MessageBus,
 		private readonly memory: SharedMemory,
 		private readonly workspaceRoot: string,
-		private readonly fileService: IFileService
+		private readonly fileService: IFileService,
+		private readonly providerManager: ProviderManager
 	) {
 		super();
 		this.budget = {
@@ -217,13 +219,14 @@ export class Orchestrator extends Disposable {
 			if (!this.activeWorkers.has(agentId)) {
 				const def = this.registry.getAgent(agentId);
 				if (def) {
-					const worker = new AgentWorker(def, this.bus, this.memory, this.workspaceRoot, this.fileService);
+					const worker = new AgentWorker(def, this.bus, this.memory, this.workspaceRoot, this.fileService, this.providerManager);
 					this.activeWorkers.set(agentId, worker);
 					worker.start(this.sessionId);
 				}
 			}
 		}
 	}
+
 
 	private dispatchReadyTasks(): void {
 		if (!this.currentPlan) return;

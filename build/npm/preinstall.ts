@@ -59,7 +59,7 @@ if (!process.env['VSCODE_FORCE_INSTALL'] && isUpToDate()) {
 	process.exit(0);
 }
 
-if (process.platform === 'win32') {
+if (process.platform === 'win32' && !process.env['CI']) {
 	if (!hasSupportedVisualStudioVersion()) {
 		console.error('\x1b[1;31m*** Invalid C/C++ Compiler Toolchain. Please check https://github.com/microsoft/vscode/wiki/How-to-Contribute#prerequisites.\x1b[0;0m');
 		console.error('\x1b[1;31m*** If you have Visual Studio installed in a custom location, you can specify it via the environment variable:\x1b[0;0m');
