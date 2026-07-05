@@ -4,175 +4,178 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+env:
+  NODE_OPTIONS: "--max-old-space-size=8192"
+
 jobs:
-  release:
+  create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
     steps:
       - name: Create Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Kyvora Studio ${{ github.ref_name }}
           draft: false
           prerelease: false
+          body: |
+            ## Kyvora Studio ${{ github.ref_name }}
+
+            ### Downloads
+            | Platform | File |
+            |----------|------|
+            | Windows x64 | `Kyvora-Studio-win32-x64.zip` |
+            | Linux x64 | `Kyvora-Studio-linux-x64.tar.gz` |
+            | macOS x64 | `Kyvora-Studio-darwin-x64.zip` |
+
+            ### Installation
+            - **Windows**: Extract ZIP → run `Kyvora Studio.exe`
+            - **Linux**: Extract tar.gz → run `./kyvora-studio`
+            - **macOS**: Extract ZIP → drag `Kyvora Studio.app` to Applications
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-windows:
-    name: Build Windows Installer
-    needs: release
+    name: Windows x64
+    needs: create-release
     runs-on: windows-latest
+    timeout-minutes: 120
     env:
+      CI: "true"
       GYP_MSVS_VERSION: "2022"
-      GYP_MSVS_DIR: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
       vs2022_install: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise"
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure Git for HTTPS
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure Git
         run: |
           git config --global url."https://github.com/".insteadOf git://github.com/
           git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Install dependencies
-        run: |
-          npm install --no-audit --no-fund
+      - name: Install Dependencies
+        run: npm install --no-audit --no-fund
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_node_gyp_force_python: "true"
 
-      - name: Build Production Binaries
-        run: |
-          npm run gulp vscode-win32-x64-min
+      - name: Build
+        run: npm run gulp vscode-win32-x64-min
 
-      - name: Prepare Inno Setup Updater
-        run: |
-          npm run gulp vscode-win32-x64-inno-updater
-
-      - name: Build Installer
-        run: |
-          npm run gulp vscode-win32-x64-user-setup
-
-      - name: Rename Installer
+      - name: Package
         shell: pwsh
         run: |
-          Copy-Item ".build/win32-x64/user-setup/VSCodeSetup.exe" "KyvoraSetup.exe"
+          $src = Join-Path (Split-Path $pwd) "VSCode-win32-x64"
+          Compress-Archive -Path "$src\*" -DestinationPath "Kyvora-Studio-win32-x64.zip" -Force
 
-      - name: Upload Windows Setup to Release
+      - name: Upload
         uses: softprops/action-gh-release@v2
         with:
-          files: KyvoraSetup.exe
+          files: Kyvora-Studio-win32-x64.zip
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-linux:
-    name: Build Linux DEB Package
-    needs: release
+    name: Linux x64
+    needs: create-release
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CI: "true"
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure Git for HTTPS
-        run: |
-          git config --global url."https://github.com/".insteadOf git://github.com/
-          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
 
       - name: Install System Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y fakeroot rpm libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev
+          sudo apt-get install -y build-essential g++ pkg-config \
+            libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev \
+            fakeroot rpm
 
-      - name: Install dependencies
+      - name: Configure Git
         run: |
-          npm install --no-audit --no-fund
+          git config --global url."https://github.com/".insteadOf git://github.com/
+          git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+
+      - name: Install Dependencies
+        run: npm install --no-audit --no-fund
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Production Binaries
-        run: |
-          npm run gulp vscode-linux-x64-min
+      - name: Build
+        run: npm run gulp vscode-linux-x64-min
 
-      - name: Prepare DEB Package
+      - name: Package
         run: |
-          npm run gulp vscode-linux-x64-prepare-deb
+          src="../VSCode-linux-x64"
+          tar -czf Kyvora-Studio-linux-x64.tar.gz -C "$(dirname "$src")" "$(basename "$src")"
 
-      - name: Build DEB Package
-        run: |
-          npm run gulp vscode-linux-x64-build-deb
-
-      - name: Rename DEB Package
-        run: |
-          cp .build/linux/deb/amd64/deb/*.deb kyvora.deb
-
-      - name: Upload Linux DEB to Release
+      - name: Upload
         uses: softprops/action-gh-release@v2
         with:
-          files: kyvora.deb
+          files: Kyvora-Studio-linux-x64.tar.gz
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-macos:
-    name: Build macOS DMG
-    needs: release
-    runs-on: macos-latest
+    name: macOS x64
+    needs: create-release
+    runs-on: macos-13
+    timeout-minutes: 120
+    env:
+      CI: "true"
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configure Git for HTTPS
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Configure Git
         run: |
           git config --global url."https://github.com/".insteadOf git://github.com/
           git config --global url."https://github.com/".insteadOf ssh://git@github.com/
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-
-      - name: Install dependencies
-        run: |
-          npm install --no-audit --no-fund
+      - name: Install Dependencies
+        run: npm install --no-audit --no-fund
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Production Binaries
-        run: |
-          npm run gulp vscode-darwin-x64-min
+      - name: Build
+        run: npm run gulp vscode-darwin-x64-min
 
-      - name: Build DMG Package
+      - name: Package
         run: |
-          mkdir -p ../out
-          export VSCODE_ARCH=x64
-          export VSCODE_QUALITY=stable
-          npx tsx build/darwin/create-dmg.ts .. ../out
+          cd ../VSCode-darwin-x64
+          zip -r -y "$GITHUB_WORKSPACE/Kyvora-Studio-darwin-x64.zip" .
 
-      - name: Rename DMG Package
-        run: |
-          cp ../out/*.dmg Kyvora.dmg
-
-      - name: Upload macOS DMG to Release
+      - name: Upload
         uses: softprops/action-gh-release@v2
         with:
-          files: Kyvora.dmg
+          files: Kyvora-Studio-darwin-x64.zip
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
