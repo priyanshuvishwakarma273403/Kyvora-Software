@@ -71,14 +71,13 @@ jobs:
         run: |
           $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
           echo "vs2022_install=$vsPath" >> $env:GITHUB_ENV
+          echo "GYP_MSVS_DIR=$vsPath" >> $env:GITHUB_ENV
           echo "Found VS at: $vsPath"
-          npm config set msvs_version 2022
 
       - name: Install Dependencies
         run: npm install --no-audit --no-fund
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          npm_config_msvs_version: "2022"
 
       - name: Build
         run: npm run gulp vscode-win32-x64-min
