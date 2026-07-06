@@ -30,14 +30,19 @@ jobs:
             ### Downloads
             | Platform | File |
             |----------|------|
-            | Windows x64 | `Kyvora-Studio-win32-x64.zip` |
-            | Linux x64 | `Kyvora-Studio-linux-x64.tar.gz` |
-            | macOS x64 | `Kyvora-Studio-darwin-x64.zip` |
+            | Windows x64 (Installer) | `Kyvora-Studio-Setup-x64.exe` |
+            | Windows x64 (Portable) | `Kyvora-Studio-win32-x64.zip` |
+            | macOS x64 (Installer DMG) | `Kyvora-Studio-darwin-x64.dmg` |
+            | macOS x64 (Portable ZIP) | `Kyvora-Studio-darwin-x64.zip` |
+            | Linux x64 (Debian DEB) | `Kyvora-Studio-linux-x64.deb` |
+            | Linux x64 (RedHat RPM) | `Kyvora-Studio-linux-x64.rpm` |
+            | Linux x64 (Portable tarball) | `Kyvora-Studio-linux-x64.tar.gz` |
 
             ### Installation
-            - **Windows**: Extract ZIP → run `Kyvora Studio.exe`
-            - **Linux**: Extract tar.gz → run `./kyvora-studio`
-            - **macOS**: Extract ZIP → drag `Kyvora Studio.app` to Applications
+            - **Windows**: Run `Kyvora-Studio-Setup-x64.exe` and follow wizard
+            - **macOS**: Mount `Kyvora-Studio-darwin-x64.dmg` and drag to Applications
+            - **Linux (Debian/Ubuntu)**: Install via `sudo apt install ./Kyvora-Studio-linux-x64.deb`
+            - **Linux (Fedora/RHEL)**: Install via `sudo dnf install ./Kyvora-Studio-linux-x64.rpm`
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -73,18 +78,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
-        run: npm run gulp vscode-win32-x64-min
+        run: |
+          npm run gulp vscode-win32-x64-min
+          npm run gulp vscode-win32-x64-inno-updater
+          npm run gulp vscode-win32-x64-user-setup
 
       - name: Package
         shell: pwsh
         run: |
+          Copy-Item ".build\win32-x64\user-setup\VSCodeSetup.exe" -Destination "Kyvora-Studio-Setup-x64.exe" -Force
           $src = Join-Path (Split-Path $pwd) "VSCode-win32-x64"
           Compress-Archive -Path "$src\*" -DestinationPath "Kyvora-Studio-win32-x64.zip" -Force
 
       - name: Upload
         uses: softprops/action-gh-release@v2
         with:
-          files: Kyvora-Studio-win32-x64.zip
+          files: |
+            Kyvora-Studio-Setup-x64.exe
+            Kyvora-Studio-win32-x64.zip
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -121,17 +132,27 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
-        run: npm run gulp vscode-linux-x64-min
+        run: |
+          npm run gulp vscode-linux-x64-min
+          npm run gulp vscode-linux-x64-prepare-deb
+          npm run gulp vscode-linux-x64-build-deb
+          npm run gulp vscode-linux-x64-prepare-rpm
+          npm run gulp vscode-linux-x64-build-rpm
 
       - name: Package
         run: |
+          cp .build/linux/deb/amd64/deb/*.deb Kyvora-Studio-linux-x64.deb
+          cp .build/linux/rpm/x86_64/*.rpm Kyvora-Studio-linux-x64.rpm
           src="../VSCode-linux-x64"
           tar -czf Kyvora-Studio-linux-x64.tar.gz -C "$(dirname "$src")" "$(basename "$src")"
 
       - name: Upload
         uses: softprops/action-gh-release@v2
         with:
-          files: Kyvora-Studio-linux-x64.tar.gz
+          files: |
+            Kyvora-Studio-linux-x64.deb
+            Kyvora-Studio-linux-x64.rpm
+            Kyvora-Studio-linux-x64.tar.gz
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -165,17 +186,24 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
-        run: npm run gulp vscode-darwin-x64-min
+        run: |
+          npm run gulp vscode-darwin-x64-min
 
       - name: Package
         run: |
+          export VSCODE_ARCH=x64
+          export VSCODE_QUALITY=stable
+          node --experimental-strip-types build/darwin/create-dmg.ts .. .
+          mv VSCode-darwin-x64.dmg Kyvora-Studio-darwin-x64.dmg
           cd ../VSCode-darwin-x64
           zip -r -y "$GITHUB_WORKSPACE/Kyvora-Studio-darwin-x64.zip" .
 
       - name: Upload
         uses: softprops/action-gh-release@v2
         with:
-          files: Kyvora-Studio-darwin-x64.zip
+          files: |
+            Kyvora-Studio-darwin-x64.dmg
+            Kyvora-Studio-darwin-x64.zip
           tag_name: ${{ github.ref_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
