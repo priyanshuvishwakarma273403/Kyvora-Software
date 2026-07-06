@@ -49,13 +49,14 @@ jobs:
     env:
       CI: "true"
       GYP_MSVS_VERSION: "2022"
+      GYP_MSVS_DIR: "C:/Program Files/Microsoft Visual Studio/2022/Enterprise"
       vs2022_install: "C:\\Program Files\\Microsoft Visual Studio\\2022\\Enterprise"
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - uses: actions/setup-python@v5
         with:
@@ -65,14 +66,6 @@ jobs:
         run: |
           git config --global url."https://github.com/".insteadOf git://github.com/
           git config --global url."https://github.com/".insteadOf ssh://git@github.com/
-
-      - name: Configure Visual Studio for node-gyp
-        shell: pwsh
-        run: |
-          $vsPath = & "C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath
-          echo "vs2022_install=$vsPath" >> $env:GITHUB_ENV
-          echo "GYP_MSVS_DIR=$vsPath" >> $env:GITHUB_ENV
-          echo "Found VS at: $vsPath"
 
       - name: Install Dependencies
         run: npm install --no-audit --no-fund
@@ -108,7 +101,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Install System Dependencies
         run: |
@@ -155,7 +148,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - uses: actions/setup-python@v5
         with:
