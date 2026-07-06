@@ -139,7 +139,7 @@ jobs:
   build-macos:
     name: macOS x64
     needs: create-release
-    runs-on: macos-13
+    runs-on: macos-latest
     timeout-minutes: 120
     env:
       CI: "true"
