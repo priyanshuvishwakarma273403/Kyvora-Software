@@ -7,6 +7,7 @@ import com.kyvora.backend.repository.UserRepository;
 import com.kyvora.backend.security.JwtUtils;
 import com.kyvora.backend.security.UserDetailsImpl;
 import com.kyvora.backend.service.RefreshTokenService;
+import com.kyvora.backend.kafka.KafkaEventProducer;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,18 +25,24 @@ public class AuthController {
     private final PasswordEncoder encoder;
     private final JwtUtils jwtUtils;
     private final RefreshTokenService refreshTokenService;
+    private final KafkaEventProducer kafkaEventProducer;
 
     public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
-                          PasswordEncoder encoder, JwtUtils jwtUtils, RefreshTokenService refreshTokenService) {
+                          PasswordEncoder encoder, JwtUtils jwtUtils, RefreshTokenService refreshTokenService,
+                          KafkaEventProducer kafkaEventProducer) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.encoder = encoder;
         this.jwtUtils = jwtUtils;
         this.refreshTokenService = refreshTokenService;
+        this.kafkaEventProducer = kafkaEventProducer;
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(
+            @Valid @RequestBody LoginRequest loginRequest,
+            @RequestHeader(value = "X-Client-Type", required = false) String clientHeader,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
 
@@ -52,6 +59,24 @@ public class AuthController {
                 .findFirst()
                 .map(item -> item.getAuthority().replace("ROLE_", ""))
                 .orElse("USER");
+
+        // Determine client type (vscode or web)
+        String client = "web";
+        if ("vscode".equalsIgnoreCase(clientHeader) || 
+            (userAgent != null && userAgent.toLowerCase().contains("vscode"))) {
+            client = "vscode";
+        }
+
+        // Produce a security notification event to Kafka
+        NotificationEvent loginEvent = NotificationEvent.builder()
+                .type("USER_LOGIN")
+                .client(client)
+                .username(userDetails.getUsername())
+                .email(userDetails.getEmail())
+                .message("User logged in successfully from " + client.toUpperCase() + " client.")
+                .timestamp(System.currentTimeMillis())
+                .build();
+        kafkaEventProducer.sendNotification(loginEvent);
 
         return ResponseEntity.ok(new JwtResponse(jwt,
                 refreshToken.getToken(),
@@ -75,15 +100,36 @@ public class AuthController {
                     .body(new MessageResponse("Error: Email is already in use!"));
         }
 
+        String roleStr = signUpRequest.getRole();
+        if (roleStr == null || roleStr.trim().isEmpty()) {
+            roleStr = "USER";
+        } else {
+            roleStr = roleStr.trim().toUpperCase();
+            if (!"ADMIN".equals(roleStr) && !"USER".equals(roleStr) && !"EDITOR".equals(roleStr)) {
+                roleStr = "USER";
+            }
+        }
+
         // Create new user
         User user = User.builder()
                 .username(signUpRequest.getUsername())
                 .email(signUpRequest.getEmail())
                 .password(encoder.encode(signUpRequest.getPassword()))
-                .role("USER")
+                .role(roleStr)
                 .build();
 
         userRepository.save(user);
+
+        // Produce signup event to Kafka
+        NotificationEvent signupEvent = NotificationEvent.builder()
+                .type("USER_SIGNUP")
+                .client("web")
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .message("New user registered successfully with role: " + roleStr)
+                .timestamp(System.currentTimeMillis())
+                .build();
+        kafkaEventProducer.sendNotification(signupEvent);
 
         return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
     }

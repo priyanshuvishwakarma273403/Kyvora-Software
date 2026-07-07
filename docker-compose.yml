@@ -19,15 +19,15 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7.0-alpine
-    container_name: kyvora-redis
+  valkey:
+    image: valkey/valkey:7.2-alpine
+    container_name: kyvora-valkey
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/data
+      - valkey-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -66,9 +66,14 @@ services:
       DATABASE_URL: jdbc:mysql://mysql:3306/kyvora_collaboration?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       DATABASE_USER: kyvora_admin
       DATABASE_PASS: kyvora_secure_pass_2026
-      REDIS_HOST: redis
+      REDIS_HOST: valkey
       REDIS_PORT: 6379
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-pv254424@gmail.com}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      RECIPIENT_EMAIL: ${RECIPIENT_EMAIL:-pv254424@gmail.com}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       GROQ_API_KEY: ${GROQ_API_KEY}
@@ -77,12 +82,12 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
+      valkey:
         condition: service_healthy
       kafka:
         condition: service_started
 
 volumes:
   mysql-data:
-  redis-data:
+  valkey-data:
   kafka-data:

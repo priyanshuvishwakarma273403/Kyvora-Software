@@ -6,9 +6,9 @@ spring:
     name: kyvora-backend
 
   datasource:
-    url: ${DATABASE_URL:jdbc:mysql://localhost:3309/kyvora_collaboration?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
-    username: ${DATABASE_USER:kyvora_admin}
-    password: ${DATABASE_PASS:kyvora_secure_pass_2026}
+    url: ${DATABASE_URL:jdbc:mysql://mysql-fd2cdb4-glal86500-7941.c.aivencloud.com:28952/defaultdb?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${DATABASE_USER:avnadmin}
+    password: ${DATABASE_PASS:AVNS_N0y5EZPLSxcBWgylWzf}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
@@ -27,13 +27,16 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      host: ${REDIS_HOST:valkey-32754410-glal86500-7941.j.aivencloud.com}
+      port: ${REDIS_PORT:28953}
+      password: ${REDIS_PASSWORD:AVNS_wN3j0xmo9xKIzZCS8Xk}
+      username: ${REDIS_USER:default}
       timeout: 6000ms
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:true}
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9094}
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:kafka-3855308e-glal86500-7941.i.aivencloud.com:28965}
     consumer:
       group-id: kyvora-collaboration-group
       auto-offset-reset: earliest
@@ -44,9 +47,29 @@ spring:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
+      sasl.mechanism: ${KAFKA_SASL_MECHANISM:SCRAM-SHA-256}
+      sasl.jaas.config: ${KAFKA_JAAS_CONFIG:org.apache.kafka.common.security.scram.ScramLoginModule required username="avnadmin" password="AVNS_ZDGDYioJ37VqELPgP3p";}
+      ssl.endpoint.identification.algorithm: ""
+
+  mail:
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
+    username: ${SPRING_MAIL_USERNAME:pv254424@gmail.com}
+    password: ${SPRING_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
 
 # Custom Security Settings
 kyvora:
+  notifications:
+    recipient-email: ${RECIPIENT_EMAIL:pv254424@gmail.com}
   security:
     jwt:
       secret: ${JWT_SECRET:dGhpcy1pcy1hLXNlY3VyZS1hbmQtc3Ryb25nLWp3dC1zZWNyZXQta2V5LWZvci1reXZvcmEtc3R1ZGlvLTIwMjYtZW50ZXJwcmlzZS1xdWFsaXR5}

@@ -9,9 +9,32 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class KafkaEventProducer {
     private final KafkaTemplate<String, CollaborationEvent> kafkaTemplate;
+    private final KafkaTemplate<String, String> stringKafkaTemplate;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
-    public KafkaEventProducer(KafkaTemplate<String, CollaborationEvent> kafkaTemplate) {
+    public KafkaEventProducer(KafkaTemplate<String, CollaborationEvent> kafkaTemplate,
+                              KafkaTemplate<String, String> stringKafkaTemplate,
+                              com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;
+        this.stringKafkaTemplate = stringKafkaTemplate;
+        this.objectMapper = objectMapper;
+    }
+
+    public void sendNotification(com.kyvora.backend.dto.NotificationEvent event) {
+        log.info("Sending notification event to Kafka: {}", event.getType());
+        try {
+            String json = objectMapper.writeValueAsString(event);
+            stringKafkaTemplate.send("kyvora-notifications", event.getUsername(), json)
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.error("Failed to send notification event to Kafka: {}", ex.getMessage());
+                        } else {
+                            log.debug("Notification event sent successfully to Kafka, offset: {}", result.getRecordMetadata().offset());
+                        }
+                    });
+        } catch (Exception e) {
+            log.error("Failed to serialize notification event: {}", e.getMessage());
+        }
     }
 
     public void sendCollaborationEvent(CollaborationEvent event) {
