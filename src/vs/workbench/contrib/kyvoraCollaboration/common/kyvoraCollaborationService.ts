@@ -120,7 +120,10 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 			const context = await this.requestService.request({
 				type: 'POST',
 				url: `${this.baseUrl}/auth/login`,
-				headers: { 'Content-Type': 'application/json' },
+				headers: { 
+					'Content-Type': 'application/json',
+					'X-Client-Type': 'vscode'
+				},
 				data: JSON.stringify({ username, password }),
 				callSite: 'kyvoraCollaborationService'
 			}, CancellationToken.None);
