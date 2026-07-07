@@ -119,12 +119,12 @@
 
 		// Create Image element using loading.png
 		const img = document.createElement('img');
-		const imagePath = `${configuration.appRoot}/src/vs/sessions/browser/media/loading.png`;
+		const isBuilt = !safeProcess.env['VSCODE_DEV'];
+		const imagePath = `${configuration.appRoot}/${isBuilt ? 'out' : 'src'}/vs/sessions/browser/media/loading.png`;
 		img.src = fileUriFromPath(imagePath, { isWindows: safeProcess.platform === 'win32', scheme: 'vscode-file', fallbackAuthority: 'vscode-app' });
 		img.style.width = '120px';
 		img.style.height = '120px';
 		img.style.objectFit = 'contain';
-		img.style.mixBlendMode = 'screen'; // removes any black background to ensure bg is transparent
 		logoContainer.appendChild(img);
 
 		// Create text container

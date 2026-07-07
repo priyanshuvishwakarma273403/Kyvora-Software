@@ -1401,8 +1401,13 @@ export class CodeApplication extends Disposable {
 		const context = isLaunchedFromCli(process.env) ? OpenContext.CLI : OpenContext.DESKTOP;
 		const args = this.environmentMainService.args;
 
-		// Handle agents window first based on context
-		if (args['agents']) {
+		const macOpenFiles: string[] = (global as { macOpenFiles?: string[] }).macOpenFiles ?? [];
+		const hasCliArgs = args._.length;
+		const hasFolderURIs = !!args['folder-uri'];
+		const hasFileURIs = !!args['file-uri'];
+
+		// Handle agents window first based on context, OR if we are launching without folder/file arguments
+		if (args['agents'] || (!hasCliArgs && !hasFolderURIs && !hasFileURIs && !args['new-window'] && !macOpenFiles.length)) {
 			return windowsMainService.openAgentsWindow({
 				context,
 				cli: args,
@@ -1459,10 +1464,6 @@ export class CodeApplication extends Disposable {
 			}
 		}
 
-		const macOpenFiles: string[] = (global as { macOpenFiles?: string[] }).macOpenFiles ?? [];
-		const hasCliArgs = args._.length;
-		const hasFolderURIs = !!args['folder-uri'];
-		const hasFileURIs = !!args['file-uri'];
 		const noRecentEntry = args['skip-add-to-recently-opened'] === true;
 		const waitMarkerFileURI = args.wait && args.waitMarkerFilePath ? URI.file(args.waitMarkerFilePath) : undefined;
 		const remoteAuthority = args.remote || undefined;

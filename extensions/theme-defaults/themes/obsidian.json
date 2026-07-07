@@ -215,7 +215,7 @@
 				"string.comment"
 			],
 			"settings": {
-				"foreground": "#7c758d"
+				"foreground": "#6b7280"
 			}
 		},
 		{
@@ -225,7 +225,7 @@
 				"storage.type"
 			],
 			"settings": {
-				"foreground": "#c084fc"
+				"foreground": "#d946ef"
 			}
 		},
 		{
@@ -235,7 +235,7 @@
 				"variable.function"
 			],
 			"settings": {
-				"foreground": "#38bdf8"
+				"foreground": "#06b6d4"
 			}
 		},
 		{
@@ -244,7 +244,7 @@
 				"string punctuation.section.embedded source"
 			],
 			"settings": {
-				"foreground": "#34d399"
+				"foreground": "#10b981"
 			}
 		},
 		{
@@ -257,16 +257,18 @@
 				"support.class"
 			],
 			"settings": {
-				"foreground": "#fb923c"
+				"foreground": "#f97316"
 			}
 		},
 		{
 			"scope": [
 				"constant.numeric",
-				"keyword.other.unit"
+				"keyword.other.unit",
+				"constant.language",
+				"constant.character"
 			],
 			"settings": {
-				"foreground": "#fbbf24"
+				"foreground": "#ec4899"
 			}
 		},
 		{
@@ -276,7 +278,7 @@
 				"storage.modifier"
 			],
 			"settings": {
-				"foreground": "#a6a0b5"
+				"foreground": "#9ca3af"
 			}
 		},
 		{

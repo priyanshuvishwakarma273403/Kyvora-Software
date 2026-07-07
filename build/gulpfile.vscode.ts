@@ -103,6 +103,7 @@ const vscodeResourceIncludes = [
 	'out-build/vs/sessions/contrib/welcome/browser/media/themePreviews/*.svg',
 	'out-build/vs/sessions/prompts/*.prompt.md',
 	'out-build/vs/sessions/skills/**/SKILL.md',
+	'out-build/vs/sessions/browser/media/**/*',
 
 	// Extensions
 	'out-build/vs/workbench/contrib/extensions/browser/media/{theme-icon.png,language-icon.svg}',
@@ -591,11 +592,11 @@ function patchWin32DependenciesTask(destinationFolderName: string) {
 				await rcedit(fullPath, {
 					'file-version': baseVersion,
 					'version-string': {
-						'CompanyName': 'Microsoft Corporation',
+						'CompanyName': 'Kyvora',
 						'FileDescription': product.nameLong,
 						'FileVersion': packageJson.version,
 						'InternalName': basename,
-						'LegalCopyright': 'Copyright (C) 2026 Microsoft. All rights reserved',
+						'LegalCopyright': 'Copyright (C) 2026 Kyvora. All rights reserved',
 						'OriginalFilename': basename,
 						'ProductName': product.nameLong,
 						'ProductVersion': packageJson.version,

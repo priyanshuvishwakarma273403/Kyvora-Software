@@ -10,8 +10,29 @@ import { KyvoraCollaborationView } from './kyvoraCollaborationView.js';
 import { ConfigurationScope, Extensions as ConfigurationExtensions, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
 import { workbenchConfigurationNodeBase } from '../../../common/configuration.js';
 
+import { IWorkbenchContribution, IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../common/contributions.js';
+import { IWorkbenchLayoutService, Parts } from '../../../services/layout/browser/layoutService.js';
+import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
+
 // ---- Register the DI Service ----
 registerSingleton(IKyvoraCollaborationService, KyvoraCollaborationService, InstantiationType.Delayed);
+
+// ---- Auto-Open Auxiliary Bar on Startup ----
+class KyvoraCollaborationInitializer implements IWorkbenchContribution {
+	constructor(
+		@IWorkbenchLayoutService private readonly layoutService: IWorkbenchLayoutService
+	) {
+		// Ensure the auxiliary bar is visible on startup (which contains our Kyvora Collaboration Hub)
+		if (!this.layoutService.isVisible(Parts.AUXILIARYBAR_PART)) {
+			this.layoutService.setPartHidden(false, Parts.AUXILIARYBAR_PART);
+		}
+	}
+}
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+	KyvoraCollaborationInitializer,
+	LifecyclePhase.Restored
+);
 
 // ---- Register the View Container (sidebar icon) ----
 const kyvoraCollaborationViewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
