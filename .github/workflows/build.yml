@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           tag_name: ${{ github.ref_name }}
@@ -92,7 +92,7 @@ jobs:
           Compress-Archive -Path "$src\*" -DestinationPath "Kyvora-Studio-win32-x64.zip" -Force
 
       - name: Upload
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           files: |
@@ -149,7 +149,7 @@ jobs:
           tar -czf Kyvora-Studio-linux-x64.tar.gz -C "$(dirname "$src")" "$(basename "$src")"
 
       - name: Upload
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           files: |
@@ -202,7 +202,7 @@ jobs:
           zip -r -y "$GITHUB_WORKSPACE/Kyvora-Studio-darwin-x64.zip" .
 
       - name: Upload
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           files: |
