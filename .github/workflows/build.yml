@@ -20,6 +20,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           tag_name: ${{ github.ref_name }}
           name: Kyvora Studio ${{ github.ref_name }}
           draft: false
@@ -44,7 +45,7 @@ jobs:
             - **Linux (Debian/Ubuntu)**: Install via `sudo apt install ./Kyvora-Studio-linux-x64.deb`
             - **Linux (Fedora/RHEL)**: Install via `sudo dnf install ./Kyvora-Studio-linux-x64.rpm`
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
   build-windows:
     name: Windows x64
@@ -93,12 +94,13 @@ jobs:
       - name: Upload
         uses: softprops/action-gh-release@v2
         with:
+          repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           files: |
             Kyvora-Studio-Setup-x64.exe
             Kyvora-Studio-win32-x64.zip
           tag_name: ${{ github.ref_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
   build-linux:
     name: Linux x64
@@ -149,13 +151,14 @@ jobs:
       - name: Upload
         uses: softprops/action-gh-release@v2
         with:
+          repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           files: |
             Kyvora-Studio-linux-x64.deb
             Kyvora-Studio-linux-x64.rpm
             Kyvora-Studio-linux-x64.tar.gz
           tag_name: ${{ github.ref_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
 
   build-macos:
     name: macOS x64
@@ -201,9 +204,10 @@ jobs:
       - name: Upload
         uses: softprops/action-gh-release@v2
         with:
+          repository: priyanshuvishwakarma273403/Kyvora-Studio-Releases
           files: |
             Kyvora-Studio-darwin-x64.dmg
             Kyvora-Studio-darwin-x64.zip
           tag_name: ${{ github.ref_name }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
