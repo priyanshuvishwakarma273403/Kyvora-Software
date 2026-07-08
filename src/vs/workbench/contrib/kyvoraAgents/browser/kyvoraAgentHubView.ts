@@ -20,7 +20,6 @@ import { AgentHubPanel } from './agentHubPanel.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { getWindow } from '../../../../base/browser/dom.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
-import { IEditorService } from '../../../services/editor/common/editorService.js';
 
 export class KyvoraAgentHubView extends ViewPane {
 	private webview: IWebviewElement | undefined;
@@ -42,12 +41,11 @@ export class KyvoraAgentHubView extends ViewPane {
 		@IHoverService hoverService: IHoverService,
 		@IWebviewService private readonly webviewService: IWebviewService,
 		@IKyvoraAgentService private readonly agentService: IKyvoraAgentService,
-		@ITelemetryService private readonly telemetryService: ITelemetryService,
-		@IEditorService private readonly editorService: IEditorService
+		@ITelemetryService private readonly telemetryService: ITelemetryService
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
 		// Reference injected services to satisfy strict compiler checks
-		if (this.agentService || this.telemetryService || this.editorService) {
+		if (this.agentService || this.telemetryService) {
 			// Injected successfully
 		}
 	}
@@ -83,10 +81,6 @@ export class KyvoraAgentHubView extends ViewPane {
 
 		this.webview.mountTo(this.container, getWindow(this.container));
 
-		this.webviewDisposables.add(this.agentService.onProjectBrainSynced((brain) => {
-			this.webview?.postMessage({ type: 'projectBrainLoaded', brain });
-		}));
-
 		this.webviewDisposables.add(this.webview.onMessage(async e => {
 			if (e.message.command === 'startHub') {
 				this.startHub();
@@ -118,25 +112,6 @@ export class KyvoraAgentHubView extends ViewPane {
 				await this.handleDeployment(e.message.platform);
 			} else if (e.message.command === 'fixWithAICommand') {
 				await this.handleFixWithAI(e.message.uri, e.message.marker);
-			} else if (e.message.command === 'getProjectBrain') {
-				const brain = await this.agentService.getProjectBrain();
-				this.webview?.postMessage({ type: 'projectBrainLoaded', brain });
-			} else if (e.message.command === 'syncProjectBrain') {
-				const brain = await this.agentService.syncProjectBrain();
-				this.webview?.postMessage({ type: 'projectBrainLoaded', brain });
-				this.sendStats();
-			} else if (e.message.command === 'getAiMemory') {
-				const memory = await this.agentService.getAiMemory();
-				this.webview?.postMessage({ type: 'aiMemoryLoaded', memory });
-			} else if (e.message.command === 'saveAiMemory') {
-				await this.agentService.saveAiMemory(e.message.memory);
-				const memory = await this.agentService.getAiMemory();
-				this.webview?.postMessage({ type: 'aiMemoryLoaded', memory });
-			} else if (e.message.command === 'generatePlannerPlan') {
-				const plan = await this.agentService.generatePlannerPlan(e.message.prompt);
-				this.webview?.postMessage({ type: 'plannerPlanLoaded', plan });
-			} else if (e.message.command === 'saveArchitectureGraph') {
-				await this.agentService.saveArchitectureGraph(e.message.graph);
 			}
 		}));
 
@@ -221,41 +196,11 @@ export class KyvoraAgentHubView extends ViewPane {
 		this.webview?.postMessage({ type: 'chatMessage', sender: 'user', text: message });
 		this.webview?.postMessage({ type: 'chatStatus', status: 'thinking' });
 
-		const activeEditor = this.editorService.activeEditor;
-		const activeFilePath = activeEditor?.resource?.fsPath || activeEditor?.resource?.path || '';
-
 		try {
-			// 1. Resolve Smart Context automatically
-			const smartContext = await this.agentService.getSmartContext(message, activeFilePath);
-			this.webview?.postMessage({ type: 'chatContextResolved', context: smartContext });
-
-			// 2. Fetch Project Brain for permanent understanding
-			const brain = await this.agentService.getProjectBrain();
-
-			// 3. Assemble prompt with smart context & project brain
-			let contextPrompt = `[PROJECT BRAIN CONTEXT]\n`;
-			contextPrompt += `Architecture: ${brain.architecture}\n`;
-			contextPrompt += `Naming Conventions: ${brain.namingConventions}\n`;
-			contextPrompt += `APIs: ${brain.apis}\n`;
-			contextPrompt += `Database Tables: ${brain.database}\n`;
-			contextPrompt += `Coding Style: ${brain.codingStyle}\n`;
-			contextPrompt += `Libraries/Dependencies: ${brain.libraries}\n\n`;
-
-			if (smartContext.contextItems.length > 0) {
-				contextPrompt += `[SMART CONTEXT (Auto-included related files & schemas)]:\n`;
-				smartContext.contextItems.forEach((item: any) => {
-					contextPrompt += `- [${item.type}] ${item.name} (${item.path}): ${item.reason}\n`;
-				});
-				contextPrompt += `\n`;
-			}
-
-			contextPrompt += `The user is asking a question or requesting a feature:
-"${message}"
-
-Refer to the Project Brain and Smart Context above to implement or explain. Do NOT ask to read these files; assume you already have their context. Provide complete, clean, modular code snippets matching our coding style and naming conventions.`;
-
 			const pm = this.agentService.getProviderManager();
-			const response = await pm.callAI(contextPrompt, 'completion');
+			const response = await pm.callAI(`The user is asking a question about the workspace:
+"${message}"
+Provide a helpful, precise, markdown-formatted response based on the workspace context.`, 'completion');
 			this.webview?.postMessage({ type: 'chatMessage', sender: 'ai', text: response });
 		} catch (error: any) {
 			this.webview?.postMessage({ type: 'chatMessage', sender: 'ai', text: `Failed to generate response: ${error.message}` });
