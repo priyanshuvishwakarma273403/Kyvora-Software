@@ -90,6 +90,7 @@ export class AgentHubPanel extends Disposable {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Kyvora AI Studio</title>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 	<style>
 		:root {
 			--bg-deepest: #070709;
@@ -118,7 +119,7 @@ export class AgentHubPanel extends Disposable {
 		body {
 			background-color: var(--bg-deepest);
 			color: var(--text-primary);
-			font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			font-family: 'Outfit', system-ui, -apple-system, sans-serif;
 			display: flex;
 			height: 100vh;
 			width: 100vw;
@@ -175,6 +176,7 @@ export class AgentHubPanel extends Disposable {
 			flex-direction: column;
 			gap: 4px;
 			flex: 1;
+			overflow-y: auto;
 		}
 
 		.nav-item {
@@ -1444,7 +1446,6 @@ export class AgentHubPanel extends Disposable {
 
 		function finishDeployLog(url, platform, time) {
 			const term = document.getElementById('deployTerminal');
-			const line = document.createElement('div');
 			line.style.color = '#38bdf8';
 			line.innerHTML = \`\n🚀 BUILD AND DEPLOYMENT SUCCESSFUL!\nPlatform: \${platform}\nTimestamp: \${time}\nLive Preview URL: <a href="\${url}" target="_blank" style="color:#22c55e;">\${url}</a>\`;
 			term.appendChild(line);
