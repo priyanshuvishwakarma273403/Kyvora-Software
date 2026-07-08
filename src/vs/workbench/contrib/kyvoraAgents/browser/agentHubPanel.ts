@@ -592,6 +592,106 @@ export class AgentHubPanel extends Disposable {
 			background: var(--bg-hover);
 		}
 
+		/* Project Brain UI tab components */
+		.brain-tab {
+			display: flex;
+			align-items: center;
+			padding: 8px 12px;
+			border-radius: 6px;
+			background: transparent;
+			border: none;
+			color: var(--text-secondary);
+			font-size: 11px;
+			font-weight: 500;
+			text-align: left;
+			cursor: pointer;
+			transition: all 0.2s;
+			width: 100%;
+		}
+		.brain-tab:hover {
+			background: var(--bg-hover);
+			color: var(--text-primary);
+		}
+		.brain-tab.active {
+			background: var(--bg-accent);
+			color: var(--accent-bright);
+			border: 1px solid var(--border-accent);
+		}
+
+		/* Memory list item UI */
+		.memory-item {
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			padding: 8px 10px;
+			border-radius: 6px;
+			font-size: 11px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 6px;
+			line-height: 1.4;
+		}
+		.memory-text {
+			flex: 1;
+			color: var(--text-primary);
+		}
+		.memory-delete {
+			color: var(--text-muted);
+			cursor: pointer;
+			background: transparent;
+			border: none;
+			font-size: 11px;
+			transition: color 0.2s;
+		}
+		.memory-delete:hover {
+			color: var(--red);
+		}
+
+		/* AI Planner Kanban */
+		.kanban-task {
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			padding: 8px;
+			border-radius: 6px;
+			font-size: 11px;
+			cursor: grab;
+			transition: border-color 0.2s;
+		}
+		.kanban-task:active {
+			cursor: grabbing;
+		}
+		.kanban-task:hover {
+			border-color: var(--accent-primary);
+		}
+		.gantt-row {
+			display: flex;
+			align-items: center;
+			font-size: 10.5px;
+			height: 28px;
+		}
+		.gantt-label {
+			width: 200px;
+			color: var(--text-primary);
+			font-weight: 500;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.gantt-bar-bg {
+			flex: 1;
+			background: var(--bg-panel);
+			border-radius: 4px;
+			height: 12px;
+			position: relative;
+			overflow: hidden;
+		}
+		.gantt-bar-fill {
+			height: 100%;
+			background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+			border-radius: 4px;
+			box-shadow: 0 0 6px var(--accent-glow);
+		}
+
 		/* Feature Toggles Panel */
 		.features-grid {
 			display: grid;
@@ -706,17 +806,15 @@ export class AgentHubPanel extends Disposable {
 			letter-spacing: 0.5px;
 		}
 
-		/* API key list */
 		.key-row {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 8px;
 			background: var(--bg-panel);
 			border: 1px solid var(--border-subtle);
 			border-radius: 6px;
-			padding: 10px 14px;
-			margin-bottom: 8px;
-			display: flex;
-			align-items: center;
-			justify-content: space-between;
-			gap: 12px;
+			margin-bottom: 6px;
 		}
 
 		.key-provider-info {
@@ -726,49 +824,40 @@ export class AgentHubPanel extends Disposable {
 		}
 
 		.key-status-icon {
-			width: 8px;
-			height: 8px;
+			width: 6px;
+			height: 6px;
 			border-radius: 50%;
 		}
 
-		.key-status-icon.configured { background: var(--green); box-shadow: 0 0 6px var(--green); }
-		.key-status-icon.missing { background: var(--orange); }
+		.key-status-icon.configured { background: var(--green); }
+		.key-status-icon.missing { background: var(--text-muted); }
 
 		.key-input-area {
 			display: flex;
 			gap: 6px;
-			flex: 1;
-			max-width: 320px;
 		}
 
 		.key-input-area input {
-			flex: 1;
 			background: var(--bg-card);
 			border: 1px solid var(--border-subtle);
-			color: var(--text-primary);
 			border-radius: 4px;
+			color: var(--text-primary);
 			padding: 4px 8px;
 			font-size: 11px;
 			outline: none;
 		}
 
 		.key-input-area button {
-			background: var(--bg-hover);
-			border: 1px solid var(--border-subtle);
-			color: var(--text-primary);
+			background: var(--accent-primary);
+			color: white;
+			border: none;
 			padding: 4px 10px;
 			border-radius: 4px;
 			font-size: 11px;
 			cursor: pointer;
-			transition: all 0.2s;
 		}
 
-		.key-input-area button:hover {
-			background: var(--accent-primary);
-			color: white;
-		}
-
-		/* Deployment Panel */
+		/* Auto Deployment */
 		.deploy-platforms {
 			display: grid;
 			grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
@@ -779,11 +868,11 @@ export class AgentHubPanel extends Disposable {
 		.platform-card {
 			background: var(--bg-panel);
 			border: 1px solid var(--border-subtle);
-			border-radius: 8px;
-			padding: 14px 10px;
+			border-radius: 6px;
+			padding: 12px;
 			text-align: center;
+			font-size: 11.5px;
 			cursor: pointer;
-			font-size: 11px;
 			transition: all 0.2s;
 		}
 
@@ -793,76 +882,113 @@ export class AgentHubPanel extends Disposable {
 		}
 
 		.platform-card.selected {
-			border-color: var(--accent-secondary);
 			background: var(--bg-accent);
+			border-color: var(--border-accent);
 			color: var(--accent-bright);
+			box-shadow: 0 4px 12px var(--accent-glow);
+		}
+
+		.btn-success {
+			background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+			border: none;
+			color: white;
+			padding: 8px 16px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-weight: 600;
+			font-size: 12px;
+			transition: all 0.2s;
+		}
+
+		.btn-success:hover {
+			filter: brightness(1.1);
+			transform: translateY(-1px);
+			box-shadow: 0 4px 12px var(--accent-glow);
+		}
+
+		.btn-danger {
+			background: #3c3c4a;
+			border: 1px solid var(--border-subtle);
+			color: var(--text-primary);
+			padding: 8px 16px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-weight: 600;
+			font-size: 12px;
+			transition: all 0.2s;
+		}
+
+		.btn-danger:hover {
+			background: var(--red);
+			border-color: var(--red);
+			color: white;
 		}
 
 		.terminal-box {
-			background: #030305;
+			background: #050508;
 			border: 1px solid var(--border-subtle);
 			border-radius: 6px;
 			padding: 12px;
 			font-family: monospace;
-			font-size: 10.5px;
-			color: #39FF14;
+			font-size: 11px;
+			color: var(--text-secondary);
 			height: 180px;
 			overflow-y: auto;
-			margin-top: 12px;
+			margin-top: 16px;
+			white-space: pre-wrap;
+			line-height: 1.5;
 		}
 
-		/* AI Fix / Diff Visualizer */
+		/* AI Fix */
 		.fix-layout {
 			display: grid;
-			grid-template-columns: 1fr;
+			grid-template-rows: auto 1fr auto;
 			gap: 12px;
+			height: 100%;
 		}
 
 		.diff-container {
 			background: #050508;
 			border: 1px solid var(--border-subtle);
 			border-radius: 6px;
-			font-family: monospace;
-			font-size: 10.5px;
 			padding: 10px;
-			overflow-x: auto;
-			max-height: 240px;
+			font-family: monospace;
+			font-size: 11px;
+			overflow-y: auto;
+			flex: 1;
 		}
 
 		.diff-line {
-			display: flex;
-			white-space: pre;
+			white-space: pre-wrap;
+			line-height: 1.5;
 		}
 
-		.diff-line.addition { background: rgba(16, 185, 129, 0.15); color: #2ecc71; }
-		.diff-line.deletion { background: rgba(239, 68, 68, 0.15); color: #e74c3c; }
+		.diff-line.addition { color: var(--green); background: rgba(16, 185, 129, 0.05); }
+		.diff-line.deletion { color: var(--red); background: rgba(239, 68, 68, 0.05); }
 
 		.action-row {
 			display: flex;
 			gap: 8px;
-			margin-top: 10px;
+			justify-content: flex-end;
 		}
 
-		.btn-success { background: var(--green); border: none; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
-		.btn-danger { background: var(--red); border: none; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; }
+		@keyframes pulse {
+			0% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+			70% { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+			100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+		}
 	</style>
 </head>
 <body>
 	<div class="app-container">
-		<!-- Sidebar Navigation -->
+		<!-- Left Sidebar -->
 		<div class="sidebar">
 			<div class="sidebar-brand">
-				<svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-					<polygon points="50,12 83,31 83,69 50,88 17,69 17,31" stroke="url(#sidebar-brand-grad)" stroke-width="6" fill="none" />
-					<defs>
-						<linearGradient id="sidebar-brand-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-							<stop offset="0%" stop-color="#8B5CF6" />
-							<stop offset="100%" stop-color="#D946EF" />
-						</linearGradient>
-					</defs>
-					<path d="M34 26 V74 M34 50 C 45 42, 58 35, 68 28 M34 50 C 48 55, 56 66, 68 72" stroke="white" stroke-width="10" stroke-linecap="round" />
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<path d="M12 2L2 22H22L12 2Z" stroke="#8B5CF6" stroke-width="2" stroke-linejoin="round"/>
+					<path d="M12 8L6 19H18L12 8Z" fill="#D946EF"/>
 				</svg>
-				<h1>KYVORA AI</h1>
+				<h1>KYVORA STUDIO</h1>
 			</div>
 
 			<div class="nav-menu">
@@ -871,6 +997,18 @@ export class AgentHubPanel extends Disposable {
 				</button>
 				<button class="nav-item" onclick="switchTab('workspace-chat')">
 					💬 AI Workspace Chat
+				</button>
+				<button class="nav-item" onclick="switchTab('project-brain')">
+					🧠 Project Brain
+				</button>
+				<button class="nav-item" onclick="switchTab('ai-memory')">
+					💾 AI Memory
+				</button>
+				<button class="nav-item" onclick="switchTab('architecture-graph')">
+					📐 Architecture Graph
+				</button>
+				<button class="nav-item" onclick="switchTab('ai-planner')">
+					📅 AI Planner
 				</button>
 				<button class="nav-item" onclick="switchTab('feature-flags')">
 					⚙️ Toggle AI Features
@@ -889,16 +1027,15 @@ export class AgentHubPanel extends Disposable {
 				</button>
 			</div>
 
-			<!-- Sidebar Footer Settings -->
 			<div class="sidebar-footer">
 				<div class="provider-select-group">
 					<label>AI Provider</label>
 					<select class="sidebar-select" id="providerSelect" onchange="changeProvider()">
-						<option value="gemini">Google Gemini</option>
-						<option value="openrouter">OpenRouter</option>
-						<option value="groq">Groq</option>
-						<option value="huggingface">HuggingFace</option>
-						<option value="sambanova">SambaNova</option>
+						<option value="gemini">Google Gemini AI</option>
+						<option value="openrouter">OpenRouter API</option>
+						<option value="groq">Groq Cloud API</option>
+						<option value="huggingface">HuggingFace Inference</option>
+						<option value="sambanova">SambaNova Systems</option>
 					</select>
 				</div>
 				<div class="provider-select-group">
@@ -962,6 +1099,16 @@ export class AgentHubPanel extends Disposable {
 				</div>
 
 				<div class="chat-container">
+					<!-- Smart Context Auto-resolved tag indicator -->
+					<div id="smartContextBadge" style="display:none; padding:8px; border-radius:6px; background:var(--bg-accent); border:1px solid var(--border-accent); font-size:11px; margin-bottom:12px; line-height:1.4;">
+						<div style="font-weight:700; color:var(--accent-bright); display:flex; justify-content:space-between; align-items:center;">
+							<span>🧠 Smart Context Resolver</span>
+							<span id="smartContextCount">0 items auto-included</span>
+						</div>
+						<div id="smartContextItems" style="margin-top:6px; display:flex; flex-direction:column; gap:4px; max-height:80px; overflow-y:auto; color:var(--text-secondary);">
+						</div>
+					</div>
+
 					<div class="chat-history" id="chatHistory">
 						<div class="chat-bubble ai">
 							<p>Hello! I am Kyvora Studio AI. I understand the entire workspace. How can I help you program today?</p>
@@ -971,6 +1118,191 @@ export class AgentHubPanel extends Disposable {
 					<div class="chat-input-row">
 						<input type="text" id="chatInput" placeholder="Ask anything about the project..." onkeypress="handleChatEnter(event)" />
 						<button onclick="sendChatMessage()">SEND</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Tab: Project Brain -->
+			<div class="tab-panel" id="tab-project-brain">
+				<div class="panel-header" style="display:flex; justify-content:space-between; align-items:center;">
+					<div>
+						<h2>🧠 Project Brain Cognitive Engine</h2>
+						<p>Permanent high-fidelity semantic model of project patterns, services, and APIs.</p>
+					</div>
+					<button class="btn-success" onclick="syncProjectBrain()" id="syncBrainBtn" style="padding: 8px 16px;">🔄 Sync Project Brain</button>
+				</div>
+				<div class="brain-layout" style="display:grid; grid-template-columns: 200px 1fr; gap:16px; flex:1; min-height:0;">
+					<div class="card-panel" style="padding: 8px; gap: 4px;">
+						<div class="card-title">Brain Categories</div>
+						<button class="brain-tab active" onclick="switchBrainTab(this, 'folderStructure')">📁 Folder Structure</button>
+						<button class="brain-tab" onclick="switchBrainTab(this, 'architecture')">🏢 System Architecture</button>
+						<button class="brain-tab" onclick="switchBrainTab(this, 'namingConventions')">🔠 Naming Conventions</button>
+						<button class="brain-tab" onclick="switchBrainTab(this, 'apis')">🔌 RESTful APIs</button>
+						<button class="brain-tab" onclick="switchBrainTab(this, 'database')">🗄️ Database Schemas</button>
+						<button class="brain-tab" onclick="switchBrainTab(this, 'codingStyle')">💅 Code Guidelines</button>
+						<button class="brain-tab" onclick="switchBrainTab(this, 'libraries')">📦 Loaded Libraries</button>
+						<button class="brain-tab" onclick="switchBrainTab(this, 'businessLogic')">💡 Business Rules</button>
+					</div>
+					<div class="card-panel" id="brainContent" style="padding:16px; font-family:'Cascadia Code', monospace; font-size:11.5px; line-height:1.6; white-space:pre-wrap; background:#08080c;">
+						Select a category to view context...
+					</div>
+				</div>
+			</div>
+
+			<!-- Tab: AI Memory -->
+			<div class="tab-panel" id="tab-ai-memory">
+				<div class="panel-header">
+					<h2>💾 Long-Term Session Memory</h2>
+					<p>Maintains persistent context across editors restarts for seamless development.</p>
+				</div>
+				<div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; flex: 1; min-height: 0; overflow-y: auto; padding-bottom:12px;">
+					<!-- 1. Chats -->
+					<div class="card-panel">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<div class="card-title" style="margin:0;">💬 Chat Summaries</div>
+							<button onclick="addMemoryPrompt('chats')" style="border:none; background:transparent; color:var(--accent-bright); font-size:12px; cursor:pointer;">+ Add</button>
+						</div>
+						<div class="memory-list" id="mem-chats" style="display:flex; flex-direction:column; gap:6px;"></div>
+					</div>
+					<!-- 2. Decisions -->
+					<div class="card-panel">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<div class="card-title" style="margin:0;">🏢 Design Decisions</div>
+							<button onclick="addMemoryPrompt('decisions')" style="border:none; background:transparent; color:var(--accent-bright); font-size:12px; cursor:pointer;">+ Add</button>
+						</div>
+						<div class="memory-list" id="mem-decisions" style="display:flex; flex-direction:column; gap:6px;"></div>
+					</div>
+					<!-- 3. Todos -->
+					<div class="card-panel">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<div class="card-title" style="margin:0;">📅 Workspace TODOs</div>
+							<button onclick="addMemoryPrompt('todos')" style="border:none; background:transparent; color:var(--accent-bright); font-size:12px; cursor:pointer;">+ Add</button>
+						</div>
+						<div class="memory-list" id="mem-todos" style="display:flex; flex-direction:column; gap:6px;"></div>
+					</div>
+					<!-- 4. Bugs -->
+					<div class="card-panel">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<div class="card-title" style="margin:0;">🐛 Known Bugs</div>
+							<button onclick="addMemoryPrompt('bugs')" style="border:none; background:transparent; color:var(--accent-bright); font-size:12px; cursor:pointer;">+ Add</button>
+						</div>
+						<div class="memory-list" id="mem-bugs" style="display:flex; flex-direction:column; gap:6px;"></div>
+					</div>
+					<!-- 5. Refactors -->
+					<div class="card-panel">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<div class="card-title" style="margin:0;">🔄 Code Refactors</div>
+							<button onclick="addMemoryPrompt('refactors')" style="border:none; background:transparent; color:var(--accent-bright); font-size:12px; cursor:pointer;">+ Add</button>
+						</div>
+						<div class="memory-list" id="mem-refactors" style="display:flex; flex-direction:column; gap:6px;"></div>
+					</div>
+					<!-- 6. Features -->
+					<div class="card-panel">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<div class="card-title" style="margin:0;">✨ Built Features</div>
+							<button onclick="addMemoryPrompt('features')" style="border:none; background:transparent; color:var(--accent-bright); font-size:12px; cursor:pointer;">+ Add</button>
+						</div>
+						<div class="memory-list" id="mem-features" style="display:flex; flex-direction:column; gap:6px;"></div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Tab: Architecture Graph -->
+			<div class="tab-panel" id="tab-architecture-graph" style="position:relative;">
+				<div class="panel-header" style="position:absolute; top:16px; left:16px; z-index:10; pointer-events:none; background: rgba(7, 7, 9, 0.7); padding: 8px; border-radius: 6px; backdrop-filter: blur(4px);">
+					<h2>📐 Architecture & Services</h2>
+					<p>Zoom & drag system architecture. Double-click to add nodes.</p>
+				</div>
+				<div class="graph-actions" style="position:absolute; top:16px; right:16px; z-index:10; display:flex; gap:6px;">
+					<button class="sidebar-select" onclick="resetGraphView()" style="padding: 4px 8px; width:auto; border-radius:4px;">Reset Zoom</button>
+				</div>
+				<div class="canvas-container" style="flex:1; width:100%; height:100%; border: 1px solid var(--border-subtle); border-radius:8px; overflow:hidden; position:relative; background:#040406;">
+					<canvas id="archCanvas" style="display:block; width:100%; height:100%; cursor:grab;"></canvas>
+					<!-- Detailed Card Overlay -->
+					<div id="nodeDetailOverlay" style="display:none; position:absolute; bottom:16px; right:16px; width:260px; background: rgba(19, 19, 26, 0.85); border: 1px solid var(--border-accent); border-radius:8px; padding:12px; backdrop-filter: blur(8px); z-index:15;">
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+							<span id="detailNodeName" style="font-size:12px; font-weight:700; color:var(--accent-bright);">Node Details</span>
+							<button onclick="closeDetailOverlay()" style="background:transparent; border:none; color:var(--text-muted); cursor:pointer;">×</button>
+						</div>
+						<p id="detailNodeDesc" style="font-size:10.5px; color:var(--text-secondary); line-height:1.4; margin-bottom:8px;">Details go here...</p>
+						<div id="detailNodeExtra" style="font-size:9.5px; color:var(--text-muted);">Related APIs & tables</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Tab: AI Planner -->
+			<div class="tab-panel" id="tab-ai-planner">
+				<div class="panel-header">
+					<h2>📅 AI Planner & Product Architect</h2>
+					<p>Input a product requirement, and AI will map the tasks, API design, folder scaffold, and roadmap.</p>
+				</div>
+				<div class="task-bar">
+					<textarea id="plannerInput" placeholder="Build a food delivery app, or build a real-time chat dashboard..."></textarea>
+					<button onclick="generatePlannerPlan()" id="planGenBtn">📅 Generate Architecture Plan</button>
+				</div>
+				<div id="plannerDashboard" style="display:none; flex-direction:column; gap:16px; flex:1; min-height:0; overflow-y:auto; padding-bottom:12px;">
+					<!-- App name header -->
+					<h3 id="planAppName" style="font-size:14px; color:var(--accent-bright); font-weight:700;">QuickBite - Food Delivery App</h3>
+					
+					<div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+						<!-- Backend Plan -->
+						<div class="card-panel">
+							<div class="card-title">Backend Architecture</div>
+							<div id="planBackend" style="font-size:11px; white-space:pre-wrap; line-height:1.5; color:var(--text-secondary);"></div>
+						</div>
+						<!-- Frontend Plan -->
+						<div class="card-panel">
+							<div class="card-title">Frontend Design</div>
+							<div id="planFrontend" style="font-size:11px; white-space:pre-wrap; line-height:1.5; color:var(--text-secondary);"></div>
+						</div>
+					</div>
+
+					<div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+						<!-- APIs -->
+						<div class="card-panel">
+							<div class="card-title">API Contracts</div>
+							<div id="planApis" style="font-size:11px; font-family:monospace; white-space:pre-wrap; line-height:1.5; color:var(--text-secondary);"></div>
+						</div>
+						<!-- Database -->
+						<div class="card-panel">
+							<div class="card-title">Database Schemas</div>
+							<div id="planDatabase" style="font-size:11px; font-family:monospace; white-space:pre-wrap; line-height:1.5; color:var(--text-secondary);"></div>
+						</div>
+					</div>
+
+					<div style="display:grid; grid-template-columns: 220px 1fr; gap:12px;">
+						<!-- Folder Structure -->
+						<div class="card-panel">
+							<div class="card-title">Folder Structure</div>
+							<div id="planStructure" style="font-size:11px; font-family:monospace; white-space:pre-wrap; line-height:1.5; color:var(--text-secondary);"></div>
+						</div>
+						<!-- Timeline -->
+						<div class="card-panel">
+							<div class="card-title">Development Timeline (Gantt Chart)</div>
+							<div id="planTimeline" style="display:flex; flex-direction:column; gap:8px;"></div>
+						</div>
+					</div>
+
+					<!-- Kanban Tasks Board -->
+					<div class="card-panel">
+						<div class="card-title">Interactive Kanban Board (Drag Tasks)</div>
+						<div class="kanban-board" style="display:grid; grid-template-columns: repeat(3, 1fr); gap:12px;">
+							<!-- Column To Do -->
+							<div class="kanban-col" ondragover="allowDrop(event)" ondrop="dropTask(event, 'todo')">
+								<div class="kanban-col-header" style="background:#13131a; padding:6px 12px; border-radius:4px; margin-bottom:8px; font-size:10px; font-weight:700; color:var(--text-secondary);">📋 TO DO</div>
+								<div class="kanban-task-list" id="kanban-todo" style="display:flex; flex-direction:column; gap:6px; min-height:100px;"></div>
+							</div>
+							<!-- Column In Progress -->
+							<div class="kanban-col" ondragover="allowDrop(event)" ondrop="dropTask(event, 'progress')">
+								<div class="kanban-col-header" style="background:var(--bg-accent); padding:6px 12px; border-radius:4px; margin-bottom:8px; font-size:10px; font-weight:700; color:var(--accent-bright);">⚡ IN PROGRESS</div>
+								<div class="kanban-task-list" id="kanban-progress" style="display:flex; flex-direction:column; gap:6px; min-height:100px;"></div>
+							</div>
+							<!-- Column Done -->
+							<div class="kanban-col" ondragover="allowDrop(event)" ondrop="dropTask(event, 'done')">
+								<div class="kanban-col-header" style="background:rgba(16, 185, 129, 0.1); padding:6px 12px; border-radius:4px; margin-bottom:8px; font-size:10px; font-weight:700; color:var(--green);">✅ DONE</div>
+								<div class="kanban-task-list" id="kanban-done" style="display:flex; flex-direction:column; gap:6px; min-height:100px;"></div>
+							</div>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -1110,9 +1442,15 @@ export class AgentHubPanel extends Disposable {
 		const vscode = acquireVsCodeApi();
 		let selectedPlatform = 'Vercel';
 		let activeFixData = null;
+		let currentBrain = null;
+		let activeBrainTabName = 'folderStructure';
+		let currentMemory = null;
+		let plannerPlanTasks = [];
 
-		// Request stats on start
+		// Request stats, memory and project brain on start
 		vscode.postMessage({ command: 'getStats' });
+		vscode.postMessage({ command: 'getProjectBrain' });
+		vscode.postMessage({ command: 'getAiMemory' });
 
 		function switchTab(tabId) {
 			// Remove active class from all tabs
@@ -1128,6 +1466,13 @@ export class AgentHubPanel extends Disposable {
 			// Find nav button
 			const btn = Array.from(navs).find(n => n.getAttribute('onclick').includes(tabId));
 			if (btn) btn.classList.add('active');
+
+			if (tabId === 'architecture-graph') {
+				setTimeout(() => {
+					resizeCanvas();
+					resetGraphView();
+				}, 100);
+			}
 		}
 
 		function startAgentTask() {
@@ -1228,6 +1573,476 @@ export class AgentHubPanel extends Disposable {
 			document.getElementById('fixNavBtn').style.display = 'none';
 		}
 
+		/* ---- Project Brain client logic ---- */
+		function syncProjectBrain() {
+			const btn = document.getElementById('syncBrainBtn');
+			btn.disabled = true;
+			btn.innerText = 'Syncing...';
+			
+			logConsole('SYS', 'Initializing Workspace Cognitive Scanning...');
+			setTimeout(() => logConsole('SYS', 'Indexing project directories...'), 400);
+			setTimeout(() => logConsole('SYS', 'Parsing kyvora-backend Maven pom.xml and model packages...'), 800);
+			setTimeout(() => logConsole('SYS', 'Parsing Kyvora-Frontend Next.js configuration...'), 1200);
+			setTimeout(() => logConsole('SYS', 'Updating local project brain model...'), 1600);
+			
+			vscode.postMessage({ command: 'syncProjectBrain' });
+		}
+
+		function switchBrainTab(btn, category) {
+			const tabs = document.querySelectorAll('.brain-tab');
+			tabs.forEach(t => t.classList.remove('active'));
+			btn.classList.add('active');
+			activeBrainTabName = category;
+			renderBrainContent();
+		}
+
+		function renderBrainContent() {
+			const box = document.getElementById('brainContent');
+			if (!currentBrain) {
+				box.innerHTML = 'Awaiting Project Brain sync...';
+				return;
+			}
+			if (activeBrainTabName === 'folderStructure') {
+				box.innerHTML = '<div class="card-title" style="margin-bottom:12px;">📁 Directory Tree</div>' + renderFolderTree(currentBrain.folderStructure);
+			} else {
+				box.innerText = currentBrain[activeBrainTabName] || 'No content resolved.';
+			}
+		}
+
+		function renderFolderTree(node, depth = 0) {
+			let html = '';
+			const indent = '&nbsp;&nbsp;&nbsp;&nbsp;'.repeat(depth);
+			if (node.type === 'directory') {
+				html += '<div>' + indent + '📁 <strong>' + node.name + '</strong>/</div>';
+				if (node.children) {
+					node.children.forEach(c => {
+						html += renderFolderTree(c, depth + 1);
+					});
+				}
+			} else {
+				html += '<div>' + indent + '📄 ' + node.name + '</div>';
+			}
+			return html;
+		}
+
+		/* ---- AI Memory client logic ---- */
+		function renderMemory() {
+			if (!currentMemory) return;
+			const categories = ['chats', 'decisions', 'todos', 'bugs', 'refactors', 'features'];
+			categories.forEach(cat => {
+				const list = document.getElementById('mem-' + cat);
+				list.innerHTML = '';
+				const arr = currentMemory[cat] || [];
+				if (arr.length === 0) {
+					list.innerHTML = '<div style="color:var(--text-muted); font-size:10px; padding:4px;">No logs recorded.</div>';
+				} else {
+					arr.forEach((item, idx) => {
+						const div = document.createElement('div');
+						div.className = 'memory-item';
+						div.innerHTML = '<span class="memory-text">' + item + '</span>' +
+							'<button class="memory-delete" onclick="deleteMemoryItem(\'' + cat + '\', ' + idx + ')">×</button>';
+						list.appendChild(div);
+					});
+				}
+			});
+		}
+
+		function addMemoryPrompt(category) {
+			const text = prompt("Add new entry to " + category + " memory:");
+			if (text && text.trim()) {
+				if (!currentMemory[category]) currentMemory[category] = [];
+				currentMemory[category].push(text.trim());
+				vscode.postMessage({ command: 'saveAiMemory', memory: currentMemory });
+			}
+		}
+
+		function deleteMemoryItem(category, idx) {
+			if (currentMemory[category]) {
+				currentMemory[category].splice(idx, 1);
+				vscode.postMessage({ command: 'saveAiMemory', memory: currentMemory });
+			}
+		}
+
+		/* ---- AI Planner client logic ---- */
+		function generatePlannerPlan() {
+			const input = document.getElementById('plannerInput').value.trim();
+			if (input) {
+				const btn = document.getElementById('planGenBtn');
+				btn.disabled = true;
+				btn.innerText = 'Planning...';
+				vscode.postMessage({ command: 'generatePlannerPlan', prompt: input });
+			}
+		}
+
+		function renderPlannerPlan(plan) {
+			document.getElementById('planGenBtn').disabled = false;
+			document.getElementById('planGenBtn').innerText = '📅 Generate Architecture Plan';
+			document.getElementById('plannerDashboard').style.display = 'flex';
+			
+			document.getElementById('planAppName').innerText = plan.appName;
+			document.getElementById('planBackend').innerText = plan.backendPlan;
+			document.getElementById('planFrontend').innerText = plan.frontendPlan;
+			document.getElementById('planApis').innerText = plan.apis;
+			document.getElementById('planDatabase').innerText = plan.database;
+			document.getElementById('planStructure').innerText = plan.folderStructure;
+
+			plannerPlanTasks = plan.tasks;
+			renderPlannerKanban();
+			renderPlannerTimeline(plan.timeline);
+		}
+
+		function renderPlannerKanban() {
+			const columns = ['todo', 'progress', 'done'];
+			columns.forEach(col => {
+				const container = document.getElementById('kanban-' + col);
+				container.innerHTML = '';
+				const tasksInCol = plannerPlanTasks.filter(t => t.column === col);
+				
+				if (tasksInCol.length === 0) {
+					container.innerHTML = '<div style="color:var(--text-muted); font-size:10px; padding:12px; text-align:center;">Drop tasks here</div>';
+				} else {
+					tasksInCol.forEach(t => {
+						const div = document.createElement('div');
+						div.className = 'kanban-task';
+						div.draggable = true;
+						div.id = 'task-' + t.id;
+						div.setAttribute('ondragstart', 'dragTask(event, "' + t.id + '")');
+						div.innerHTML = '<div style="font-weight:600; margin-bottom:4px; color:var(--text-primary);">' + t.title + '</div>' +
+							'<div style="font-size:9.5px; color:var(--text-secondary);">' + t.desc + '</div>';
+						container.appendChild(div);
+					});
+				}
+			});
+		}
+
+		function renderPlannerTimeline(timeline) {
+			const container = document.getElementById('planTimeline');
+			container.innerHTML = '';
+			
+			timeline.forEach(t => {
+				const row = document.createElement('div');
+				row.className = 'gantt-row';
+				row.innerHTML = '<div class="gantt-label">' + t.phase + '</div>' +
+					'<div style="width: 80px; color: var(--text-secondary); font-size:10px; margin-right:8px;">' + t.start + ' - ' + t.end + '</div>' +
+					'<div class="gantt-bar-bg">' +
+					'  <div class="gantt-bar-fill" style="width: ' + t.progress + '%;"></div>' +
+					'</div>' +
+					'<div style="width: 32px; text-align:right; font-size:10px; color: var(--text-muted); margin-left:8px;">' + t.progress + '%</div>';
+				container.appendChild(row);
+			});
+		}
+
+		function dragTask(ev, taskId) {
+			ev.dataTransfer.setData("taskId", taskId);
+		}
+
+		function allowDrop(ev) {
+			ev.preventDefault();
+		}
+
+		function dropTask(ev, col) {
+			ev.preventDefault();
+			const taskId = ev.dataTransfer.getData("taskId");
+			const task = plannerPlanTasks.find(t => t.id === taskId);
+			if (task) {
+				task.column = col;
+				renderPlannerKanban();
+			}
+		}
+
+		/* ---- Architecture Graph Canvas Engine ---- */
+		const canvas = document.getElementById('archCanvas');
+		const ctx = canvas ? canvas.getContext('2d') : null;
+		let zoom = 1.0;
+		let panX = 0;
+		let panY = 0;
+		let isDraggingGraph = false;
+		let startDragX = 0;
+		let startDragY = 0;
+		let selectedNode = null;
+		let draggedNode = null;
+
+		let nodes = [
+			{ id: 'Frontend', name: 'Kyvora Frontend', x: 120, y: 200, color: '#06b6d4', desc: 'Next.js 15 app router web interfaces.', extra: 'Dependencies: react, framer-motion, lucide-react, postcss' },
+			{ id: 'Gateway', name: 'Spring Gateway', x: 270, y: 200, color: '#a855f7', desc: 'Security gateway and rate limiter.', extra: 'Endpoints: /api/auth/**, /api/user/**, /api/collaboration/**' },
+			{ id: 'Auth', name: 'Auth Service', x: 420, y: 110, color: '#ec4899', desc: 'Validates JWTs and resolves logins.', extra: 'Classes: AuthController, JwtUtils, AuthTokenFilter' },
+			{ id: 'User', name: 'User Service', x: 420, y: 290, color: '#3b82f6', desc: 'Manages user profile, settings and roles.', extra: 'Classes: UserController, UserDetailsServiceImpl' },
+			{ id: 'Payment', name: 'Payment Broker', x: 570, y: 290, color: '#eab308', desc: 'Integrates payments gateway services.', extra: 'Classes: PaymentController, StripeService' },
+			{ id: 'Kafka', name: 'Kafka Event Bus', x: 570, y: 110, color: '#f97316', desc: 'Apache Kafka event publisher/consumer.', extra: 'Topics: notification-events, user-registrations' },
+			{ id: 'Database', name: 'MySQL DB Store', x: 720, y: 200, color: '#10b981', desc: 'JPA Entities backed relational store.', extra: 'Tables: users, refresh_tokens, collaboration_sessions' }
+		];
+
+		let connections = [
+			{ from: 'Frontend', to: 'Gateway' },
+			{ from: 'Gateway', to: 'Auth' },
+			{ from: 'Gateway', to: 'User' },
+			{ from: 'User', to: 'Payment' },
+			{ from: 'Auth', to: 'Kafka' },
+			{ from: 'Payment', to: 'Kafka' },
+			{ from: 'Auth', to: 'Database' },
+			{ from: 'User', to: 'Database' },
+			{ from: 'Payment', to: 'Database' }
+		];
+
+		let flowParticles = [];
+		// Generate periodic particles
+		setInterval(() => {
+			if (document.getElementById('tab-architecture-graph').classList.contains('active')) {
+				connections.forEach(c => {
+					flowParticles.push({
+						from: c.from,
+						to: c.to,
+						progress: 0,
+						speed: 0.01 + Math.random() * 0.01
+					});
+				});
+			}
+		}, 800);
+
+		function resizeCanvas() {
+			if (!canvas) return;
+			const rect = canvas.parentElement.getBoundingClientRect();
+			canvas.width = rect.width * window.devicePixelRatio;
+			canvas.height = rect.height * window.devicePixelRatio;
+			canvas.style.width = rect.width + 'px';
+			canvas.style.height = rect.height + 'px';
+		}
+
+		window.addEventListener('resize', resizeCanvas);
+
+		function drawGraph() {
+			if (!canvas || !ctx) return;
+			
+			// Clear
+			ctx.clearRect(0, 0, canvas.width, canvas.height);
+			
+			ctx.save();
+			// Scale for Retina/HighDPI
+			ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+			
+			// Translate & Zoom
+			ctx.translate(panX, panY);
+			ctx.scale(zoom, zoom);
+			
+			// Draw Connections
+			connections.forEach(c => {
+				const fromNode = nodes.find(n => n.id === c.from);
+				const toNode = nodes.find(n => n.id === c.to);
+				if (fromNode && toNode) {
+					// Draw line
+					ctx.strokeStyle = '#1e1e2d';
+					ctx.lineWidth = 2;
+					ctx.beginPath();
+					ctx.moveTo(fromNode.x, fromNode.y);
+					ctx.lineTo(toNode.x, toNode.y);
+					ctx.stroke();
+					
+					// Draw Arrowhead
+					const angle = Math.atan2(toNode.y - fromNode.y, toNode.x - fromNode.x);
+					ctx.fillStyle = '#474766';
+					ctx.beginPath();
+					const arrowX = toNode.x - 45 * Math.cos(angle);
+					const arrowY = toNode.y - 45 * Math.sin(angle);
+					ctx.moveTo(arrowX, arrowY);
+					ctx.lineTo(arrowX - 8 * Math.cos(angle - Math.PI/6), arrowY - 8 * Math.sin(angle - Math.PI/6));
+					ctx.lineTo(arrowX - 8 * Math.cos(angle + Math.PI/6), arrowY - 8 * Math.sin(angle + Math.PI/6));
+					ctx.closePath();
+					ctx.fill();
+				}
+			});
+
+			// Draw Particles
+			ctx.fillStyle = 'rgba(217, 70, 239, 0.8)';
+			flowParticles.forEach((p, idx) => {
+				const fromNode = nodes.find(n => n.id === p.from);
+				const toNode = nodes.find(n => n.id === p.to);
+				if (fromNode && toNode) {
+					p.progress += p.speed;
+					if (p.progress >= 1) {
+						flowParticles.splice(idx, 1);
+						return;
+					}
+					const cx = fromNode.x + (toNode.x - fromNode.x) * p.progress;
+					const cy = fromNode.y + (toNode.y - fromNode.y) * p.progress;
+					
+					ctx.beginPath();
+					ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+					ctx.shadowBlur = 6;
+					ctx.shadowColor = '#D946EF';
+					ctx.fill();
+					ctx.shadowBlur = 0; // reset
+				}
+			});
+
+			// Draw Nodes
+			nodes.forEach(n => {
+				const isSelected = selectedNode === n;
+				
+				// Glow if selected
+				if (isSelected) {
+					ctx.shadowBlur = 15;
+					ctx.shadowColor = n.color;
+				}
+				
+				// Draw rounded glassmorphic card rect
+				ctx.fillStyle = 'rgba(19, 19, 26, 0.9)';
+				ctx.strokeStyle = isSelected ? n.color : '#2d2d3d';
+				ctx.lineWidth = isSelected ? 2 : 1.5;
+				
+				const w = 110;
+				const h = 42;
+				const rx = n.x - w/2;
+				const ry = n.y - h/2;
+				
+				ctx.beginPath();
+				ctx.roundRect(rx, ry, w, h, 6);
+				ctx.fill();
+				ctx.stroke();
+				ctx.shadowBlur = 0; // reset
+				
+				// Color badge left
+				ctx.fillStyle = n.color;
+				ctx.beginPath();
+				ctx.roundRect(rx + 4, ry + 4, 3, h - 8, 2);
+				ctx.fill();
+				
+				// Title Text
+				ctx.fillStyle = '#e2e1e6';
+				ctx.font = 'bold 9.5px sans-serif';
+				ctx.fillText(n.name, rx + 12, ry + 18);
+				
+				// Subtext status
+				ctx.fillStyle = '#9a98a0';
+				ctx.font = '8px sans-serif';
+				ctx.fillText(n.id + ' Node', rx + 12, ry + 30);
+			});
+
+			ctx.restore();
+			
+			requestAnimationFrame(drawGraph);
+		}
+
+		function setupCanvasListeners() {
+			if (!canvas) return;
+			canvas.addEventListener('mousedown', e => {
+				const rect = canvas.getBoundingClientRect();
+				const mouseX = (e.clientX - rect.left - panX) / zoom;
+				const mouseY = (e.clientY - rect.top - panY) / zoom;
+				
+				// Check click on nodes
+				let hitNode = null;
+				nodes.forEach(n => {
+					if (Math.abs(n.x - mouseX) < 55 && Math.abs(n.y - mouseY) < 21) {
+						hitNode = n;
+					}
+				});
+				
+				if (hitNode) {
+					selectedNode = hitNode;
+					draggedNode = hitNode;
+					showNodeDetail(hitNode);
+				} else {
+					isDraggingGraph = true;
+					startDragX = e.clientX - panX;
+					startDragY = e.clientY - panY;
+				}
+			});
+			
+			canvas.addEventListener('mousemove', e => {
+				const rect = canvas.getBoundingClientRect();
+				if (draggedNode) {
+					const mouseX = (e.clientX - rect.left - panX) / zoom;
+					const mouseY = (e.clientY - rect.top - panY) / zoom;
+					draggedNode.x = mouseX;
+					draggedNode.y = mouseY;
+				} else if (isDraggingGraph) {
+					panX = e.clientX - startDragX;
+					panY = e.clientY - startDragY;
+				}
+			});
+			
+			window.addEventListener('mouseup', () => {
+				if (draggedNode) {
+					vscode.postMessage({ command: 'saveArchitectureGraph', graph: { nodes, connections } });
+				}
+				draggedNode = null;
+				isDraggingGraph = false;
+			});
+			
+			canvas.addEventListener('wheel', e => {
+				e.preventDefault();
+				const rect = canvas.getBoundingClientRect();
+				const mouseX = e.clientX - rect.left;
+				const mouseY = e.clientY - rect.top;
+				
+				const zoomFactor = 1.05;
+				if (e.deltaY < 0) {
+					zoom *= zoomFactor;
+					panX = mouseX - (mouseX - panX) * zoomFactor;
+					panY = mouseY - (mouseY - panY) * zoomFactor;
+				} else {
+					zoom /= zoomFactor;
+					panX = mouseX - (mouseX - panX) / zoomFactor;
+					panY = mouseY - (mouseY - panY) / zoomFactor;
+				}
+			});
+
+			canvas.addEventListener('dblclick', e => {
+				const rect = canvas.getBoundingClientRect();
+				const mouseX = (e.clientX - rect.left - panX) / zoom;
+				const mouseY = (e.clientY - rect.top - panY) / zoom;
+				
+				const name = prompt("Enter new service node name:");
+				if (name) {
+					const id = name.replace(/\s+/g, '');
+					const newNode = {
+						id,
+						name,
+						x: mouseX,
+						y: mouseY,
+						color: '#ec4899',
+						desc: 'Custom user defined microservice/worker node.',
+						extra: 'Double click to edit settings.'
+					};
+					nodes.push(newNode);
+					
+					// Connect to Gateway or previous selected node automatically
+					if (selectedNode) {
+						connections.push({ from: selectedNode.id, to: id });
+					} else {
+						connections.push({ from: 'Gateway', to: id });
+					}
+					vscode.postMessage({ command: 'saveArchitectureGraph', graph: { nodes, connections } });
+				}
+			});
+		}
+
+		function showNodeDetail(node) {
+			document.getElementById('nodeDetailOverlay').style.display = 'block';
+			document.getElementById('detailNodeName').innerText = node.name;
+			document.getElementById('detailNodeDesc').innerText = node.desc;
+			document.getElementById('detailNodeExtra').innerText = node.extra;
+		}
+
+		function closeDetailOverlay() {
+			document.getElementById('nodeDetailOverlay').style.display = 'none';
+		}
+
+		function resetGraphView() {
+			zoom = 1.0;
+			panX = 0;
+			panY = 0;
+			selectedNode = null;
+			closeDetailOverlay();
+		}
+
+		// Initialize Graph
+		setTimeout(() => {
+			resizeCanvas();
+			setupCanvasListeners();
+			drawGraph();
+		}, 200);
+
 		window.addEventListener('message', (event) => {
 			const msg = event.data;
 			switch (msg.type) {
@@ -1289,6 +2104,55 @@ export class AgentHubPanel extends Disposable {
 				case 'fixResult':
 					renderFixResult(msg.data);
 					break;
+				
+				// New Message Handlers
+				case 'projectBrainLoaded': {
+					const btn = document.getElementById('syncBrainBtn');
+					if (btn) {
+						btn.disabled = false;
+						btn.innerText = '🔄 Sync Project Brain';
+					}
+					currentBrain = msg.brain;
+					if (currentBrain && currentBrain.architectureGraph) {
+						if (currentBrain.architectureGraph.nodes) {
+							nodes = currentBrain.architectureGraph.nodes;
+						}
+						if (currentBrain.architectureGraph.connections) {
+							connections = currentBrain.architectureGraph.connections;
+						}
+					}
+					renderBrainContent();
+					break;
+				}
+				case 'aiMemoryLoaded':
+					currentMemory = msg.memory;
+					renderMemory();
+					break;
+				case 'plannerPlanLoaded':
+					renderPlannerPlan(msg.plan);
+					break;
+				case 'chatContextResolved': {
+					const badge = document.getElementById('smartContextBadge');
+					const list = document.getElementById('smartContextItems');
+					const count = document.getElementById('smartContextCount');
+					
+					if (list) {
+						list.innerHTML = '';
+						if (msg.context && msg.context.contextItems.length > 0) {
+							if (badge) badge.style.display = 'block';
+							if (count) count.innerText = msg.context.totalMatchedFiles + ' dependencies auto-included';
+							msg.context.contextItems.forEach(item => {
+								const div = document.createElement('div');
+								div.style.fontSize = '10px';
+								div.innerHTML = '• [<strong>' + item.type + '</strong>] ' + item.name + ' (' + item.path + ') - ' + item.reason;
+								list.appendChild(div);
+							});
+						} else {
+							if (badge) badge.style.display = 'none';
+						}
+					}
+					break;
+				}
 			}
 		});
 
@@ -1339,16 +2203,14 @@ export class AgentHubPanel extends Disposable {
 				const card = document.createElement('div');
 				card.className = 'feature-card';
 				const info = featureFriendlyNames[fid] || [fid, 'Configure settings'];
-				card.innerHTML = \`
-					<div class="feature-info">
-						<span class="feature-name">\${info[0]}</span>
-						<span class="feature-desc">\${info[1]}</span>
-					</div>
-					<label class="switch">
-						<input type="checkbox" \${data.features[fid] ? 'checked' : ''} onchange="toggleFeature('\${fid}', this)">
-						<span class="slider"></span>
-					</label>
-				\`;
+				card.innerHTML = '<div class="feature-info">' +
+					'  <span class="feature-name">' + info[0] + '</span>' +
+					'  <span class="feature-desc">' + info[1] + '</span>' +
+					'</div>' +
+					'<label class="switch">' +
+					'  <input type="checkbox" ' + (data.features[fid] ? 'checked' : '') + ' onchange="toggleFeature(\'' + fid + '\', this)">' +
+					'  <span class="slider"></span>' +
+					'</label>';
 				grid.appendChild(card);
 			});
 
@@ -1367,16 +2229,14 @@ export class AgentHubPanel extends Disposable {
 				const hasKey = data.keys[p];
 				const row = document.createElement('div');
 				row.className = 'key-row';
-				row.innerHTML = \`
-					<div class="key-provider-info">
-						<span class="key-status-icon \${hasKey ? 'configured' : 'missing'}"></span>
-						<span style="font-size:12px; font-weight:600;">\${providerDisplay[p]}</span>
-					</div>
-					<div class="key-input-area">
-						<input type="password" id="key-input-\${p}" placeholder="\${hasKey ? '••••••••••••••••••••••••' : 'Add API key...'}" />
-						<button onclick="saveKey('\${p}')">Save</button>
-					</div>
-				\`;
+				row.innerHTML = '<div class="key-provider-info">' +
+					'  <span class="key-status-icon ' + (hasKey ? 'configured' : 'missing') + '"></span>' +
+					'  <span style="font-size:12px; font-weight:600;">' + providerDisplay[p] + '</span>' +
+					'</div>' +
+					'<div class="key-input-area">' +
+					'  <input type="password" id="key-input-' + p + '" placeholder="' + (hasKey ? '••••••••••••••••••••••••' : 'Add API key...') + '" />' +
+					'  <button onclick="saveKey(\'' + p + '\')">Save</button>' +
+					'</div>';
 				keyList.appendChild(row);
 			});
 		}
@@ -1387,14 +2247,12 @@ export class AgentHubPanel extends Disposable {
 			plan.subtasks.forEach(t => {
 				const div = document.createElement('div');
 				div.className = 'subtask-box ' + t.status;
-				div.innerHTML = \`
-					<div class="subtask-header">
-						<span class="subtask-name">\${t.title}</span>
-						<span class="subtask-agent-lbl">\${t.assignedAgent}</span>
-					</div>
-					<p class="subtask-desc">\${t.description}</p>
-					<div style="font-size:9.5px; color: var(--text-secondary); margin-top:6px;">Status: \${t.status.toUpperCase()}</div>
-				\`;
+				div.innerHTML = '<div class="subtask-header">' +
+					'  <span class="subtask-name">' + t.title + '</span>' +
+					'  <span class="subtask-agent-lbl">' + t.assignedAgent + '</span>' +
+					'</div>' +
+					'<p class="subtask-desc">' + t.description + '</p>' +
+					'<div style="font-size:9.5px; color: var(--text-secondary); margin-top:6px;">Status: ' + t.status.toUpperCase() + '</div>';
 				box.appendChild(div);
 			});
 		}
@@ -1439,15 +2297,16 @@ export class AgentHubPanel extends Disposable {
 		function appendDeployLog(step, index, total) {
 			const term = document.getElementById('deployTerminal');
 			const line = document.createElement('div');
-			line.innerText = \`[\${index}/\${total}] \${step}\`;
+			line.innerText = `[\${index}/\${total}] \${step}`;
 			term.appendChild(line);
 			term.scrollTop = term.scrollHeight;
 		}
 
 		function finishDeployLog(url, platform, time) {
 			const term = document.getElementById('deployTerminal');
+			const line = document.createElement('div');
 			line.style.color = '#38bdf8';
-			line.innerHTML = \`\n🚀 BUILD AND DEPLOYMENT SUCCESSFUL!\nPlatform: \${platform}\nTimestamp: \${time}\nLive Preview URL: <a href="\${url}" target="_blank" style="color:#22c55e;">\${url}</a>\`;
+			line.innerHTML = `\n🚀 BUILD AND DEPLOYMENT SUCCESSFUL!\nPlatform: \${platform}\nTimestamp: \${time}\nLive Preview URL: <a href="\${url}" target="_blank" style="color:#22c55e;">\${url}</a>`;
 			term.appendChild(line);
 			term.scrollTop = term.scrollHeight;
 		}

@@ -63,6 +63,8 @@ export interface IKyvoraAgentService {
 	saveAiMemory(memory: any): Promise<void>;
 	generatePlannerPlan(prompt: string): Promise<any>;
 	getSmartContext(query: string, activeFilePath?: string): Promise<any>;
+	readonly onProjectBrainSynced: Event<any>;
+	saveArchitectureGraph(graph: any): Promise<void>;
 
 	// Lifecycle
 	dispose(): void;
@@ -109,7 +111,11 @@ export class KyvoraAgentService extends Disposable implements IKyvoraAgentServic
 	private readonly _onAuditEntry = this._register(new Emitter<AuditEntry>());
 	readonly onAuditEntry: Event<AuditEntry> = this._onAuditEntry.event;
 
+	private readonly _onProjectBrainSynced = this._register(new Emitter<any>());
+	readonly onProjectBrainSynced: Event<any> = this._onProjectBrainSynced.event;
+
 	private currentPlan: TaskPlan | null = null;
+	private syncBrainDebounceTimeout: any = null;
 
 	constructor(
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
@@ -136,6 +142,9 @@ export class KyvoraAgentService extends Disposable implements IKyvoraAgentServic
 
 		// Wire events
 		this.wireEvents();
+
+		// Start Workspace file system change watcher for automatic Project Brain sync
+		this.startFileWatcher(rootUri);
 	}
 
 	private wireEvents(): void {
@@ -412,52 +421,130 @@ export class KyvoraAgentService extends Disposable implements IKyvoraAgentServic
 	}
 
 	async generatePlannerPlan(prompt: string): Promise<any> {
-		const isFood = prompt.toLowerCase().includes('food') || prompt.toLowerCase().includes('delivery');
-		if (isFood) {
+		const systemPrompt = `You are Kyvora Product Planner. Generate a comprehensive architecture plan for the product request: "${prompt}".
+You must return your response as a strict JSON object with the following fields:
+{
+  "appName": "Name of the app",
+  "backendPlan": "Description of backend architecture and key patterns.",
+  "frontendPlan": "Description of frontend design and main pages/components.",
+  "database": "Standard SQL/NoSQL schema schemas (Tables, Fields, Types, FKs).",
+  "apis": "List of REST/GraphQL/WebSocket endpoints and contracts.",
+  "folderStructure": "Text diagram of the folder scaffold (e.g. root/\\n├── backend/...).",
+  "tasks": [
+    { "id": "t1", "title": "Task Title", "column": "todo", "desc": "Detailed task description" }
+  ],
+  "timeline": [
+    { "phase": "Phase 1 Name", "start": "Day 1", "end": "Day 3", "progress": 0 }
+  ]
+}
+
+Provide exactly 5-8 logical tasks and 3-5 timeline phases. Make sure the first 1-2 tasks have "done" or "progress" column values, and the rest "todo".
+Ensure the output is valid JSON only. Do not include markdown wraps like \`\`\`json.`;
+
+		try {
+			const response = await this.providerManager.callAI(systemPrompt, 'generation');
+			const startIdx = response.indexOf('{');
+			const endIdx = response.lastIndexOf('}');
+			if (startIdx !== -1 && endIdx !== -1) {
+				return JSON.parse(response.substring(startIdx, endIdx + 1));
+			}
+			return JSON.parse(response);
+		} catch (error) {
+			console.error('Failed to generate planner plan via AI, falling back:', error);
+			const isFood = prompt.toLowerCase().includes('food') || prompt.toLowerCase().includes('delivery');
+			if (isFood) {
+				return {
+					appName: 'QuickBite - Food Delivery App',
+					backendPlan: 'Spring Boot Microservices:\n- Gateway Service: Router & Security Interceptor\n- Auth Service: JWT Signin/Signup\n- Catalog Service: Restaurant & Menu query API\n- Order Service: Cart, Checkout, Order state workflow\n- Payment Service: Stripe webhook connector\n- Notification Service: Kafka listener & Email client',
+					frontendPlan: 'React Mobile App:\n- Dashboard: Top restaurants near me, categories grid, deals carousel\n- Restaurant Page: Menu categorized list, add to cart toggle\n- Cart: Quantities edit, checkout form, coupon code input\n- Track Order: Live leaflet map location updates with WebSocket client',
+					database: 'Table: users (id, name, email, password, role)\nTable: restaurants (id, name, address, logo, rating)\nTable: menu_items (id, restaurant_id, name, price, description)\nTable: orders (id, user_id, restaurant_id, status, total, delivery_address)\nTable: payments (id, order_id, transaction_id, amount, status)',
+					apis: 'POST /api/auth/login\nPOST /api/auth/register\nGET /api/restaurants\nGET /api/restaurants/{id}/menu\nPOST /api/orders\nPOST /api/payments/checkout',
+					folderStructure: 'root/\n├── backend/\n│   ├── gateway/\n│   ├── auth/\n│   └── order/\n└── frontend/\n    ├── src/\n    │   ├── app/\n    │   └── components/\n    └── package.json',
+					tasks: [
+						{ id: 't1', title: 'Setup Microservices Framework', column: 'done', desc: 'Initialize Spring Boot projects and Kafka config.' },
+						{ id: 't2', title: 'Implement JWT Auth Service', column: 'progress', desc: 'Write WebSecurityConfig, JwtUtils and signup controllers.' },
+						{ id: 't3', title: 'Design Database ERD schemas', column: 'done', desc: 'Write Flyway SQL migrations for tables.' },
+						{ id: 't4', title: 'Create Next.js Main Dashboard', column: 'progress', desc: 'Build modern home layout matching Outfit typography.' },
+						{ id: 't5', title: 'Integrate Stripe Gateway SDK', column: 'todo', desc: 'Configure Stripe library on checkout endpoint.' },
+						{ id: 't6', title: 'Establish WebSocket Driver tracker', column: 'todo', desc: 'Sync driver location coordinate updates.' }
+					],
+					timeline: [
+						{ phase: 'Milestone 1: Backend Architecture & DB Setup', start: 'Day 1', end: 'Day 4', progress: 100 },
+						{ phase: 'Milestone 2: JWT Security & User APIs', start: 'Day 5', end: 'Day 8', progress: 60 },
+						{ phase: 'Milestone 3: Mobile Frontend UI & Dashboard', start: 'Day 9', end: 'Day 13', progress: 40 },
+						{ phase: 'Milestone 4: Ordering & Stripe Checkout', start: 'Day 14', end: 'Day 18', progress: 0 },
+						{ phase: 'Milestone 5: WebSocket Live Tracker & Deployment', start: 'Day 19', end: 'Day 22', progress: 0 }
+					]
+				};
+			}
+
 			return {
-				appName: 'QuickBite - Food Delivery App',
-				backendPlan: 'Spring Boot Microservices:\n- Gateway Service: Router & Security Interceptor\n- Auth Service: JWT Signin/Signup\n- Catalog Service: Restaurant & Menu query API\n- Order Service: Cart, Checkout, Order state workflow\n- Payment Service: Stripe webhook connector\n- Notification Service: Kafka listener & Email client',
-				frontendPlan: 'React Mobile App:\n- Dashboard: Top restaurants near me, categories grid, deals carousel\n- Restaurant Page: Menu categorized list, add to cart toggle\n- Cart: Quantities edit, checkout form, coupon code input\n- Track Order: Live leaflet map location updates with WebSocket client',
-				database: 'Table: users (id, name, email, password, role)\nTable: restaurants (id, name, address, logo, rating)\nTable: menu_items (id, restaurant_id, name, price, description)\nTable: orders (id, user_id, restaurant_id, status, total, delivery_address)\nTable: payments (id, order_id, transaction_id, amount, status)',
-				apis: 'POST /api/auth/login\nPOST /api/auth/register\nGET /api/restaurants\nGET /api/restaurants/{id}/menu\nPOST /api/orders\nPOST /api/payments/checkout',
-				folderStructure: 'root/\n├── backend/\n│   ├── gateway/\n│   ├── auth/\n│   └── order/\n└── frontend/\n    ├── src/\n    │   ├── app/\n    │   └── components/\n    └── package.json',
+				appName: prompt || 'Custom Dynamic App',
+				backendPlan: 'Spring Boot REST Monolith with Layered Architecture:\n- Controller: Maps endpoints and parses DTO inputs\n- Service: Executes transaction logic & validates constraints\n- Model: Maps JPA entities to database tables\n- Repository: Standard Spring Data JPA queries',
+				frontendPlan: 'Next.js App router + Shadcn UI components & Lucide icons.',
+				database: 'Table: items (id, name, description, created_at, status)\nTable: users (id, username, password_hash, email)',
+				apis: 'GET /api/items\nPOST /api/items\nPUT /api/items/{id}\nDELETE /api/items/{id}',
+				folderStructure: 'src/\n├── main/\n│   ├── java/com/app/controllers/\n│   └── resources/application.yml\n└── frontend/\n    └── src/app/',
 				tasks: [
-					{ id: 't1', title: 'Setup Microservices Framework', column: 'done', desc: 'Initialize Spring Boot projects and Kafka config.' },
-					{ id: 't2', title: 'Implement JWT Auth Service', column: 'progress', desc: 'Write WebSecurityConfig, JwtUtils and signup controllers.' },
-					{ id: 't3', title: 'Design Database ERD schemas', column: 'done', desc: 'Write Flyway SQL migrations for tables.' },
-					{ id: 't4', title: 'Create Next.js Main Dashboard', column: 'progress', desc: 'Build modern home layout matching Outfit typography.' },
-					{ id: 't5', title: 'Integrate Stripe Gateway SDK', column: 'todo', desc: 'Configure Stripe library on checkout endpoint.' },
-					{ id: 't6', title: 'Establish WebSocket Driver tracker', column: 'todo', desc: 'Sync driver location coordinate updates.' }
+					{ id: 't1', title: 'Initialize Git & Project Directories', column: 'done', desc: 'Create base Spring Boot and Next.js templates.' },
+					{ id: 't2', title: 'Create DB Models & Liquibase Scripts', column: 'progress', desc: 'Setup tables structure.' },
+					{ id: 't3', title: 'Implement CRUD Restful APIs', column: 'todo', desc: 'Add GET, POST, PUT, DELETE mappings.' }
 				],
 				timeline: [
-					{ phase: 'Milestone 1: Backend Architecture & DB Setup', start: 'Day 1', end: 'Day 4', progress: 100 },
-					{ phase: 'Milestone 2: JWT Security & User APIs', start: 'Day 5', end: 'Day 8', progress: 60 },
-					{ phase: 'Milestone 3: Mobile Frontend UI & Dashboard', start: 'Day 9', end: 'Day 13', progress: 40 },
-					{ phase: 'Milestone 4: Ordering & Stripe Checkout', start: 'Day 14', end: 'Day 18', progress: 0 },
-					{ phase: 'Milestone 5: WebSocket Live Tracker & Deployment', start: 'Day 19', end: 'Day 22', progress: 0 }
+					{ phase: 'Milestone 1: Project Setup & DB schema', start: 'Day 1', end: 'Day 3', progress: 100 },
+					{ phase: 'Milestone 2: CRUD Endpoints implementation', start: 'Day 4', end: 'Day 7', progress: 30 },
+					{ phase: 'Milestone 3: UI Layout & API Hooks integration', start: 'Day 8', end: 'Day 11', progress: 0 }
 				]
 			};
 		}
+	}
 
-		// Generic app plan fallback
-		return {
-			appName: prompt || 'Custom Dynamic App',
-			backendPlan: 'Spring Boot REST Monolith with Layered Architecture:\n- Controller: Maps endpoints and parses DTO inputs\n- Service: Executes transaction logic & validates constraints\n- Model: Maps JPA entities to database tables\n- Repository: Standard Spring Data JPA queries',
-			frontendPlan: 'Next.js App router + Shadcn UI components & Lucide icons.',
-			database: 'Table: items (id, name, description, created_at, status)\nTable: users (id, username, password_hash, email)',
-			apis: 'GET /api/items\nPOST /api/items\nPUT /api/items/{id}\nDELETE /api/items/{id}',
-			folderStructure: 'src/\n├── main/\n│   ├── java/com/app/controllers/\n│   └── resources/application.yml\n└── frontend/\n    └── src/app/',
-			tasks: [
-				{ id: 't1', title: 'Initialize Git & Project Directories', column: 'done', desc: 'Create base Spring Boot and Next.js templates.' },
-				{ id: 't2', title: 'Create DB Models & Liquibase Scripts', column: 'progress', desc: 'Setup tables structure.' },
-				{ id: 't3', title: 'Implement CRUD Restful APIs', column: 'todo', desc: 'Add GET, POST, PUT, DELETE mappings.' }
-			],
-			timeline: [
-				{ phase: 'Milestone 1: Project Setup & DB schema', start: 'Day 1', end: 'Day 3', progress: 100 },
-				{ phase: 'Milestone 2: CRUD Endpoints implementation', start: 'Day 4', end: 'Day 7', progress: 30 },
-				{ phase: 'Milestone 3: UI Layout & API Hooks integration', start: 'Day 8', end: 'Day 11', progress: 0 }
-			]
-		};
+	async saveArchitectureGraph(graph: any): Promise<void> {
+		const brain = await this.getProjectBrain();
+		brain.architectureGraph = graph;
+		const rootUri = this.workspaceContextService.getWorkspace().folders[0]?.uri || URI.file('');
+		const brainUri = URI.joinPath(rootUri, '.kyvora_brain.json');
+		try {
+			await this.fileService.writeFile(brainUri, VSBuffer.fromString(JSON.stringify(brain, null, 2)));
+			this._onProjectBrainSynced.fire(brain);
+		} catch (e) {
+			console.error('Failed to save architecture graph in brain:', e);
+		}
+	}
+
+	private startFileWatcher(rootUri: URI): void {
+		this._register(this.fileService.watch(rootUri));
+		this._register(this.fileService.onDidFilesChange(e => {
+			let isInterestingChange = false;
+			for (const change of e.changes) {
+				const path = change.resource.fsPath || change.resource.path;
+				if (
+					path.includes('.git') ||
+					path.includes('node_modules') ||
+					path.includes('target') ||
+					path.includes('out') ||
+					path.includes('.kyvora_')
+				) {
+					continue;
+				}
+				isInterestingChange = true;
+				break;
+			}
+			if (isInterestingChange) {
+				this.triggerSyncBrainDebounced();
+			}
+		}));
+	}
+
+	private triggerSyncBrainDebounced(): void {
+		if (this.syncBrainDebounceTimeout) {
+			clearTimeout(this.syncBrainDebounceTimeout);
+		}
+		this.syncBrainDebounceTimeout = setTimeout(async () => {
+			console.log('[KyvoraAgentService] Structural change detected, auto-syncing Project Brain...');
+			const brain = await this.syncProjectBrain();
+			this._onProjectBrainSynced.fire(brain);
+		}, 1500);
 	}
 
 	async getSmartContext(query: string, activeFilePath?: string): Promise<any> {

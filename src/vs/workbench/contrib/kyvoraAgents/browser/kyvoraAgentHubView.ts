@@ -83,6 +83,10 @@ export class KyvoraAgentHubView extends ViewPane {
 
 		this.webview.mountTo(this.container, getWindow(this.container));
 
+		this.webviewDisposables.add(this.agentService.onProjectBrainSynced((brain) => {
+			this.webview?.postMessage({ type: 'projectBrainLoaded', brain });
+		}));
+
 		this.webviewDisposables.add(this.webview.onMessage(async e => {
 			if (e.message.command === 'startHub') {
 				this.startHub();
@@ -131,6 +135,8 @@ export class KyvoraAgentHubView extends ViewPane {
 			} else if (e.message.command === 'generatePlannerPlan') {
 				const plan = await this.agentService.generatePlannerPlan(e.message.prompt);
 				this.webview?.postMessage({ type: 'plannerPlanLoaded', plan });
+			} else if (e.message.command === 'saveArchitectureGraph') {
+				await this.agentService.saveArchitectureGraph(e.message.graph);
 			}
 		}));
 
