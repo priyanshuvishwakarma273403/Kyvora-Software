@@ -548,4 +548,83 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 		if (this.activities.length > 50) { this.activities.pop(); }
 		this._onDidActivityChange.fire([...this.activities]);
 	}
+
+	private clearParticipantDecorations(username: string): void {
+		const decInfo = this.participantDecorations.get(username);
+		if (decInfo) {
+			for (const editor of this.codeEditorService.listCodeEditors()) {
+				const model = editor.getModel();
+				if (model && model.uri.toString() === decInfo.modelUri) {
+					model.deltaDecorations(decInfo.decorationIds, []);
+				}
+			}
+			this.participantDecorations.delete(username);
+		}
+	}
+
+	private clearAllParticipantDecorations(): void {
+		for (const username of this.participantDecorations.keys()) {
+			this.clearParticipantDecorations(username);
+		}
+	}
+
+	private updateRemoteCursorDecoration(username: string, activeFile: string, line: number, col: number): void {
+		this.clearParticipantDecorations(username);
+
+		if (!activeFile || activeFile === 'Untitled' || activeFile.trim() === '') {
+			return;
+		}
+
+		for (const editor of this.codeEditorService.listCodeEditors()) {
+			const model = editor.getModel();
+			if (model) {
+				const path = model.uri.path;
+				if (path === activeFile || path.endsWith(activeFile) || activeFile.endsWith(path)) {
+					const styleId = `kyvora-style-${username.replace(/[^a-zA-Z0-9]/g, '_')}`;
+					if (typeof document !== 'undefined' && !document.getElementById(styleId)) {
+						const getUsernameColor = (name: string) => {
+							let hash = 0;
+							for (let i = 0; i < name.length; i++) {
+								hash = name.charCodeAt(i) + ((hash << 5) - hash);
+							}
+							const colors = ['#8B5CF6', '#D946EF', '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#06B6D4'];
+							const idx = Math.abs(hash) % colors.length;
+							return colors[idx];
+						};
+						const color = getUsernameColor(username);
+						const style = document.createElement('style');
+						style.id = styleId;
+						style.textContent = `
+							.kyvora-cursor-${username.replace(/[^a-zA-Z0-9]/g, '_')} {
+								border-left: 2px solid ${color} !important;
+								margin-left: -1px;
+								animation: blink 1s step-end infinite;
+							}
+							@keyframes blink {
+								from, to { border-color: transparent }
+								50% { border-color: ${color} }
+							}
+						`;
+						document.head.appendChild(style);
+					}
+
+					const range = new Range(line, col, line, col);
+					const newDecorationIds = model.deltaDecorations([], [{
+						range,
+						options: {
+							description: 'remote-cursor-' + username,
+							className: `kyvora-cursor-${username.replace(/[^a-zA-Z0-9]/g, '_')}`,
+							hoverMessage: { value: `**${username}** is coding here` }
+						}
+					}]);
+
+					this.participantDecorations.set(username, {
+						modelUri: model.uri.toString(),
+						decorationIds: newDecorationIds
+					});
+					break;
+				}
+			}
+		}
+	}
 }
