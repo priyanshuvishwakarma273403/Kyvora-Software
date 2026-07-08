@@ -373,6 +373,7 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 				this.participants = this.participants.filter(p => p.username !== event.username);
 				this._onDidParticipantsChange.fire([...this.participants]);
 				this.logActivity(`${event.username} left collaboration`);
+				this.clearParticipantDecorations(event.username);
 				this.notificationService.notify({
 					severity: Severity.Warning,
 					message: `${event.username} left the session.`
@@ -392,6 +393,12 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 			case 'CURSOR_MOVE':
 				const cursorPresence = JSON.parse(event.payload);
 				this.updateParticipantPresence(cursorPresence);
+				this.updateRemoteCursorDecoration(
+					cursorPresence.username,
+					cursorPresence.activeFile,
+					cursorPresence.cursorLine,
+					cursorPresence.cursorColumn
+				);
 				break;
 			case 'VOICE_STATUS':
 				const voicePresence = JSON.parse(event.payload);
