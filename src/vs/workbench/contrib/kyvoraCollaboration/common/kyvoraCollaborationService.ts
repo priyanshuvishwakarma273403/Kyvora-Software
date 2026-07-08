@@ -8,6 +8,7 @@ import { INotificationService, Severity } from '../../../../platform/notificatio
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IRequestService, asJson } from '../../../../platform/request/common/request.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { Range } from '../../../../editor/common/core/range.js';
 
 export const IKyvoraCollaborationService = createDecorator<IKyvoraCollaborationService>('kyvoraCollaborationService');
 
@@ -77,6 +78,7 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 	private wsUrl = 'ws://localhost:8080/ws-collaboration';
 	private token: string | null = null;
 	private username = '';
+	private participantDecorations = new Map<string, { modelUri: string, decorationIds: string[] }>();
 
 	constructor(
 		@IStorageService private readonly storageService: IStorageService,
@@ -328,6 +330,7 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 		this.secretToken = null;
 		this.participants = [];
 		this.messages = [];
+		this.clearAllParticipantDecorations();
 		this._onDidSessionChange.fire(null);
 		this._onDidParticipantsChange.fire([]);
 		this._onDidMessagesChange.fire([]);

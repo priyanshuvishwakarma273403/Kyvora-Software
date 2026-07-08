@@ -18,21 +18,21 @@ import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js'
 registerSingleton(IKyvoraCollaborationService, KyvoraCollaborationService, InstantiationType.Delayed);
 
 // ---- Auto-Open Auxiliary Bar on Startup ----
-class KyvoraCollaborationInitializer implements IWorkbenchContribution {
-	constructor(
-		@IWorkbenchLayoutService private readonly layoutService: IWorkbenchLayoutService
-	) {
-		// Ensure the auxiliary bar is visible on startup (which contains our Kyvora Collaboration Hub)
-		if (!this.layoutService.isVisible(Parts.AUXILIARYBAR_PART)) {
-			this.layoutService.setPartHidden(false, Parts.AUXILIARYBAR_PART);
-		}
-	}
-}
-
-Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
-	KyvoraCollaborationInitializer,
-	LifecyclePhase.Restored
-);
+// class KyvoraCollaborationInitializer implements IWorkbenchContribution {
+// 	constructor(
+// 		@IWorkbenchLayoutService private readonly layoutService: IWorkbenchLayoutService
+// 	) {
+// 		// Ensure the auxiliary bar is visible on startup (which contains our Kyvora Collaboration Hub)
+// 		if (!this.layoutService.isVisible(Parts.AUXILIARYBAR_PART)) {
+// 			this.layoutService.setPartHidden(false, Parts.AUXILIARYBAR_PART);
+// 		}
+// 	}
+// }
+// 
+// Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+// 	KyvoraCollaborationInitializer,
+// 	LifecyclePhase.Restored
+// );
 
 // ---- Register the View Container (sidebar icon) ----
 const kyvoraCollaborationViewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
@@ -48,7 +48,7 @@ const kyvoraCollaborationViewContainer = Registry.as<IViewContainersRegistry>(Vi
 		order: 9,
 	},
 	hideIfEmpty: false,
-}, ViewContainerLocation.AuxiliaryBar);
+}, ViewContainerLocation.Sidebar);
 
 // ---- Register Views inside the container ----
 const viewsRegistry = Registry.as<IViewsRegistry>(ViewContainerExtensions.ViewsRegistry);
