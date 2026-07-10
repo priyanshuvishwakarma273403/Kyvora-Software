@@ -32,6 +32,7 @@ export class KyvoraCollaborationView extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@IHoverService hoverService: IHoverService,
 		@IWebviewService private readonly webviewService: IWebviewService
+	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
 		this._register(this.onDidChangeBodyVisibility(visible => {
 			if (visible) {
