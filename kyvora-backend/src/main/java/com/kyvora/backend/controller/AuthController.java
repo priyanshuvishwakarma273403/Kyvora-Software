@@ -156,4 +156,9 @@ public class AuthController {
         }
         return ResponseEntity.ok(new MessageResponse("Log out successful!"));
     }
+
+    @GetMapping("/ping")
+    public ResponseEntity<?> ping() {
+        return ResponseEntity.ok(new MessageResponse("pong"));
+    }
 }

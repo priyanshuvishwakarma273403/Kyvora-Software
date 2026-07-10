@@ -1,0 +1,34 @@
+name: Keep Backend Warm
+
+on:
+  schedule:
+    # Runs every 10 minutes to prevent Render from going to sleep
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allows manual run from GitHub Actions tab
+
+jobs:
+  keep-warm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend API Endpoint
+        run: |
+          # Use the repository secret BACKEND_API_URL if configured, otherwise fallback to the default Render URL
+          API_URL="${{ secrets.BACKEND_API_URL }}"
+          if [ -z "$API_URL" ]; then
+            API_URL="https://kyvora-backend.onrender.com"
+          fi
+          
+          # Strip trailing slash if present
+          API_URL="${API_URL%/}"
+          
+          PING_ENDPOINT="${API_URL}/api/v1/auth/ping"
+          echo "Sending HTTP GET request to $PING_ENDPOINT..."
+          
+          response=$(curl -s -w "%{http_code}" -o /dev/null "$PING_ENDPOINT")
+          
+          echo "Response Status Code: $response"
+          if [ "$response" -eq 200 ]; then
+            echo "Successfully pinged backend. Server is awake!"
+          else
+            echo "Warning: Received unexpected status code $response. Backend might be waking up or there was an error."
+          fi

@@ -6,7 +6,7 @@ spring:
     name: kyvora-backend
 
   datasource:
-    url: ${DATABASE_URL:jdbc:mysql://mysql-fd2cdb4-glal86500-7941.c.aivencloud.com:28952/defaultdb?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    url: ${DATABASE_URL:jdbc:mysql://mysql-fd2cdb4-glal86500-7941.c.aivencloud.com:28952/kyvora?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: ${DATABASE_USER:avnadmin}
     password: ${DATABASE_PASS:AVNS_N0y5EZPLSxcBWgylWzf}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -52,6 +52,7 @@ spring:
       sasl.mechanism: ${KAFKA_SASL_MECHANISM:SCRAM-SHA-256}
       sasl.jaas.config: ${KAFKA_JAAS_CONFIG:org.apache.kafka.common.security.scram.ScramLoginModule required username="avnadmin" password="AVNS_ZDGDYioJ37VqELPgP3p";}
       ssl.endpoint.identification.algorithm: ""
+      ssl.engine.factory.class: ${KAFKA_SSL_ENGINE_FACTORY_CLASS:com.kyvora.backend.security.TrustAllSslEngineFactory}
 
   mail:
     host: ${SPRING_MAIL_HOST:smtp.gmail.com}

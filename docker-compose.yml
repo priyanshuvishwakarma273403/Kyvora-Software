@@ -63,12 +63,19 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DATABASE_URL: jdbc:mysql://mysql:3306/kyvora_collaboration?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      DATABASE_USER: kyvora_admin
-      DATABASE_PASS: kyvora_secure_pass_2026
-      REDIS_HOST: valkey
-      REDIS_PORT: 6379
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      DATABASE_URL: ${DATABASE_URL:-jdbc:mysql://mysql:3306/kyvora_collaboration?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+      DATABASE_USER: ${DATABASE_USER:-kyvora_admin}
+      DATABASE_PASS: ${DATABASE_PASS:-kyvora_secure_pass_2026}
+      REDIS_HOST: ${REDIS_HOST:-valkey}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_USER: ${REDIS_USER:-default}
+      REDIS_SSL_ENABLED: ${REDIS_SSL_ENABLED:-false}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
+      KAFKA_SECURITY_PROTOCOL: ${KAFKA_SECURITY_PROTOCOL:-PLAINTEXT}
+      KAFKA_SASL_MECHANISM: ${KAFKA_SASL_MECHANISM:-}
+      KAFKA_JAAS_CONFIG: ${KAFKA_JAAS_CONFIG:-}
+      KAFKA_SSL_ENGINE_FACTORY_CLASS: ${KAFKA_SSL_ENGINE_FACTORY_CLASS:-}
       SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:-smtp.gmail.com}
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:-pv254424@gmail.com}

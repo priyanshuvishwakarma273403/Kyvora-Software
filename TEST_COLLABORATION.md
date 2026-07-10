@@ -24,6 +24,7 @@ Open **two separate terminals** and run the following commands:
 .\scripts\code.bat --user-data-dir="C:\Users\himanshu vishwakarma\.gemini\antigravity\user-data-a" --extensions-dir="C:\Users\himanshu vishwakarma\.gemini\antigravity\extensions-a"
 ```
 
+
 ### Terminal 2: Launch Kyvora Instance B
 ```powershell
 .\scripts\code.bat --user-data-dir="C:\Users\himanshu vishwakarma\.gemini\antigravity\user-data-b" --extensions-dir="C:\Users\himanshu vishwakarma\.gemini\antigravity\extensions-b"

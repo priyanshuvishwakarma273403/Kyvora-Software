@@ -34,7 +34,7 @@ public class NotificationConsumer {
 
             String timeStr = DATE_TIME_FORMATTER.format(Instant.ofEpochMilli(event.getTimestamp()));
             
-            // Build a beautiful email body
+            // 1. Build and send the system alert email to admin
             StringBuilder bodyBuilder = new StringBuilder();
             bodyBuilder.append("=== Kyvora Alert System ===\n\n");
             bodyBuilder.append("An important security or system activity occurred in Kyvora.\n\n");
@@ -48,6 +48,43 @@ public class NotificationConsumer {
 
             String subject = String.format("[Kyvora Alert] %s - %s", event.getType(), event.getUsername());
             emailService.sendNotificationEmail(subject, bodyBuilder.toString());
+
+            // 2. Auto-reply confirmation/security alert email directly to the user who triggered it
+            if (event.getEmail() != null && !event.getEmail().trim().isEmpty()) {
+                String userEmail = event.getEmail().trim();
+                StringBuilder userBodyBuilder = new StringBuilder();
+                
+                userBodyBuilder.append("Hello ").append(event.getUsername()).append(",\n\n");
+                
+                if ("USER_SIGNUP".equalsIgnoreCase(event.getType())) {
+                    userBodyBuilder.append("Welcome to Kyvora! Your account has been successfully created.\n\n");
+                    userBodyBuilder.append("Account Details:\n");
+                    userBodyBuilder.append("- Username: ").append(event.getUsername()).append("\n");
+                    userBodyBuilder.append("- Registered Email: ").append(userEmail).append("\n");
+                    userBodyBuilder.append("- Time: ").append(timeStr).append("\n\n");
+                    userBodyBuilder.append("You are all set to start using the Kyvora AI-powered IDE features.\n\n");
+                } else if ("USER_LOGIN".equalsIgnoreCase(event.getType())) {
+                    userBodyBuilder.append("We detected a successful login to your Kyvora account.\n\n");
+                    userBodyBuilder.append("Session Details:\n");
+                    userBodyBuilder.append("- Platform: ").append(event.getClient() != null ? event.getClient().toUpperCase() : "WEB").append("\n");
+                    userBodyBuilder.append("- Time: ").append(timeStr).append("\n");
+                    userBodyBuilder.append("- Status: Successful\n\n");
+                    userBodyBuilder.append("If this was you, no further action is required. If you suspect any unauthorized access, please update your account password immediately.\n\n");
+                } else {
+                    userBodyBuilder.append("An action was performed on your Kyvora account:\n\n");
+                    userBodyBuilder.append("- Activity: ").append(event.getType()).append("\n");
+                    userBodyBuilder.append("- Message: ").append(event.getMessage()).append("\n");
+                    userBodyBuilder.append("- Time: ").append(timeStr).append("\n\n");
+                }
+                
+                userBodyBuilder.append("Best regards,\n");
+                userBodyBuilder.append("The Kyvora Team\n");
+
+                String userSubject = String.format("[Kyvora] %s Notification", 
+                        "USER_SIGNUP".equalsIgnoreCase(event.getType()) ? "Welcome" : "Security Alert");
+                
+                emailService.sendEmail(userEmail, userSubject, userBodyBuilder.toString());
+            }
 
         } catch (Exception e) {
             log.error("Failed to parse or process notification event: {}", e.getMessage(), e);

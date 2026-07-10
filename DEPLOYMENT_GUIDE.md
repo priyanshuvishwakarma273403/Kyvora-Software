@@ -11,12 +11,17 @@ We have pre-configured the backend to connect directly to your Aiven instances b
 | Service | Parameter | Value / Connection URL |
 | :--- | :--- | :--- |
 | **MySQL (Aiven)** | Host / Port | `mysql-fd2cdb4-glal86500-7941.c.aivencloud.com:28952` |
-| | Database | `defaultdb` |
+| | Database | `kyvora` |
 | | Username / Password | `avnadmin` / `AVNS_N0y5EZPLSxcBWgylWzf` |
 | **Valkey (Aiven)** | Host / Port | `valkey-32754410-glal86500-7941.j.aivencloud.com:28953` (SSL: Secure) |
 | | Username / Password | `default` / `AVNS_wN3j0xmo9xKIzZCS8Xk` |
 | **Kafka (Aiven)** | Bootstrap Servers | `kafka-3855308e-glal86500-7941.i.aivencloud.com:28965` (SASL_SSL / SCRAM-SHA-256) |
 | | Username / Password | `avnadmin` / `AVNS_ZDGDYioJ37VqELPgP3p` |
+
+> [!NOTE]
+> **Aiven Kafka Free/Trial Partition Policy:** 
+> Aiven enforces a limit of **maximum 2 partitions per topic** for free/trial instances. Standard Kafka configurations default to 3 or more partitions, which will trigger a `PolicyViolationException` and block startup.
+> We have set all topics to `.partitions(1)` in `KafkaTopicConfig.java` to stay within limits. Ensure any manually created topics follow this policy!
 
 ---
 
@@ -38,7 +43,7 @@ These are already mapped to the default Aiven configuration in `application.yml`
 
 ```env
 # 1. database configuration
-DATABASE_URL=jdbc:mysql://mysql-fd2cdb4-glal86500-7941.c.aivencloud.com:28952/defaultdb?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+DATABASE_URL=jdbc:mysql://mysql-fd2cdb4-glal86500-7941.c.aivencloud.com:28952/kyvora?useSSL=true&requireSSL=true&verifyServerCertificate=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
 DATABASE_USER=avnadmin
 DATABASE_PASS=AVNS_N0y5EZPLSxcBWgylWzf
 
@@ -112,3 +117,5 @@ graph TD
 *   **Role Enforcement:** Controllers use Spring's `@PreAuthorize` method-level security:
     *   `/api/v1/users/profile` can be accessed by anyone authenticated.
     *   `/api/v1/admin/users` is strictly locked to users with the `ADMIN` role. If a normal `USER` tries to call it, Spring returns a `403 Forbidden` response.
+
+docker-compose up --build -d

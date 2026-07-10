@@ -22,18 +22,22 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public void sendNotificationEmail(String subject, String body) {
-        log.info("Preparing to send email notification to: {}", recipientEmail);
+    public void sendEmail(String toEmail, String subject, String body) {
+        log.info("Preparing to send email to: {}", toEmail);
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(senderEmail);
-            message.setTo(recipientEmail);
+            message.setTo(toEmail);
             message.setSubject(subject);
             message.setText(body);
             mailSender.send(message);
-            log.info("Email notification sent successfully to {}", recipientEmail);
+            log.info("Email sent successfully to {}", toEmail);
         } catch (Exception e) {
-            log.error("Failed to send email notification to {}: {}", recipientEmail, e.getMessage());
+            log.error("Failed to send email to {}: {}", toEmail, e.getMessage());
         }
+    }
+
+    public void sendNotificationEmail(String subject, String body) {
+        sendEmail(recipientEmail, subject, body);
     }
 }

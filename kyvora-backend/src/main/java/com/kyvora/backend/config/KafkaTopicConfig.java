@@ -11,24 +11,28 @@ public class KafkaTopicConfig {
     @Bean
     public NewTopic collaborationEventsTopic() {
         return TopicBuilder.name("kyvora-collaboration-events")
-                .partitions(3)
-                .replicas(1)
+                .partitions(1)
                 .build();
     }
 
     @Bean
     public NewTopic chatEventsTopic() {
         return TopicBuilder.name("kyvora-chat-events")
-                .partitions(3)
-                .replicas(1)
+                .partitions(1)
                 .build();
     }
 
     @Bean
     public NewTopic terminalEventsTopic() {
         return TopicBuilder.name("kyvora-terminal-events")
-                .partitions(3)
-                .replicas(1)
+                .partitions(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic notificationsTopic() {
+        return TopicBuilder.name("kyvora-notifications")
+                .partitions(1)
                 .build();
     }
 }
