@@ -32,8 +32,15 @@ export class KyvoraCollaborationView extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@IHoverService hoverService: IHoverService,
 		@IWebviewService private readonly webviewService: IWebviewService
-	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
+		this._register(this.onDidChangeBodyVisibility(visible => {
+			if (visible) {
+				this.buildWebview();
+			} else {
+				this.webviewDisposables.clear();
+				this.webview = undefined;
+			}
+		}));
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -74,16 +81,6 @@ export class KyvoraCollaborationView extends ViewPane {
 		// Initial display
 		this.webview.setHtml(this.collaborationPanel.getHtmlContent());
 		this.collaborationPanel.setWebview(this.webview);
-	}
-
-	protected override onDidChangeBodyVisibility(visible: boolean): void {
-		super.onDidChangeBodyVisibility(visible);
-		if (visible) {
-			this.buildWebview();
-		} else {
-			this.webviewDisposables.clear();
-			this.webview = undefined;
-		}
 	}
 
 	protected override layoutBody(height: number, width: number): void {

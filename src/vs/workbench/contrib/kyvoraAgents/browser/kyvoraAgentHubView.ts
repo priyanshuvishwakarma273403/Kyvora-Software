@@ -48,6 +48,14 @@ export class KyvoraAgentHubView extends ViewPane {
 		if (this.agentService || this.telemetryService) {
 			// Injected successfully
 		}
+		this._register(this.onDidChangeBodyVisibility(visible => {
+			if (visible) {
+				this.buildWebview();
+			} else {
+				this.webviewDisposables.clear();
+				this.webview = undefined;
+			}
+		}));
 	}
 
 	protected override renderBody(container: HTMLElement): void {
@@ -119,15 +127,6 @@ export class KyvoraAgentHubView extends ViewPane {
 		this.updateWebviewContent();
 	}
 
-	protected override onDidChangeBodyVisibility(visible: boolean): void {
-		super.onDidChangeBodyVisibility(visible);
-		if (visible) {
-			this.buildWebview();
-		} else {
-			this.webviewDisposables.clear();
-			this.webview = undefined;
-		}
-	}
 
 	public startHub(): void {
 		this.isStarted = true;
