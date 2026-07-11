@@ -415,7 +415,12 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	) {
 		super();
 
-		this._welcomeDataPromise = this._queryGitBranchAndJava();
+		this._welcomeDataPromise = Promise.resolve();
+		try {
+			this._queryGitBranchAndJava();
+		} catch {
+			// ignore
+		}
 
 		this._wrapperElement = document.createElement('div');
 		this._wrapperElement.classList.add('terminal-wrapper');
