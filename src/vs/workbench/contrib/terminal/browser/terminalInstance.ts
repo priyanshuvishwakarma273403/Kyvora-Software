@@ -375,6 +375,8 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	readonly sessionId = generateUuid();
 
 	private _welcomeScreenPrinted = false;
+	private _welcomeScreenPrinting = false;
+	private _earlyProcessDataBuffer: IProcessDataEvent[] = [];
 	private _welcomeDataPromise!: Promise<void>;
 	private _gitBranch = 'main';
 	private _javaVer = 'N/A';
@@ -1655,24 +1657,33 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 
 	private _onProcessData(ev: IProcessDataEvent): void {
 		if (!this._welcomeScreenPrinted && !this._shellLaunchConfig.hideFromUser && !this._shellLaunchConfig.isFeatureTerminal) {
-			this._welcomeScreenPrinted = true;
-			this._welcomeDataPromise.then(() => {
-				const welcomeText = getWelcomeScreenText({
-					workspaceName: this._workspaceContextService.getWorkspace().folders[0]?.name || 'Kyvora Workspace',
-					gitBranch: this._gitBranch,
-					currentTime: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-					osName: OS === OperatingSystem.Windows ? 'Windows' : OS === OperatingSystem.Macintosh ? 'macOS' : 'Linux',
-					nodeVer: typeof process !== 'undefined' ? process.version : 'v18.17.1',
-					javaVer: this._javaVer,
-					aiModel: this._configurationService.getValue<string>('kyvora.ai.model') || 'mixtral-8x7b-32768',
-					isTrusted: this._workspaceTrustRequestService.isWorkspaceTrusted(),
-					themeService: this._themeService,
-					configurationService: this._configurationService,
-					cols: this.xterm?.raw.cols || 80
+			if (!this._welcomeScreenPrinting) {
+				this._welcomeScreenPrinting = true;
+				this._earlyProcessDataBuffer.push(ev);
+				this._welcomeDataPromise.then(() => {
+					const welcomeText = getWelcomeScreenText({
+						workspaceName: this._workspaceContextService.getWorkspace().folders[0]?.name || 'Kyvora Workspace',
+						gitBranch: this._gitBranch,
+						currentTime: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+						osName: OS === OperatingSystem.Windows ? 'Windows' : OS === OperatingSystem.Macintosh ? 'macOS' : 'Linux',
+						nodeVer: typeof process !== 'undefined' ? process.version : 'v18.17.1',
+						javaVer: this._javaVer,
+						aiModel: this._configurationService.getValue<string>('kyvora.ai.model') || 'mixtral-8x7b-32768',
+						isTrusted: this._workspaceTrustRequestService.isWorkspaceTrusted(),
+						themeService: this._themeService,
+						configurationService: this._configurationService,
+						cols: this.xterm?.raw.cols || 80
+					});
+					this._writeProcessData(welcomeText + '\r\n');
+					this._welcomeScreenPrinted = true;
+					for (const bufferedEv of this._earlyProcessDataBuffer) {
+						this._continueOnProcessData(bufferedEv);
+					}
+					this._earlyProcessDataBuffer = [];
 				});
-				this._writeProcessData(welcomeText + '\r\n');
-				this._continueOnProcessData(ev);
-			});
+			} else {
+				this._earlyProcessDataBuffer.push(ev);
+			}
 			return;
 		}
 		this._continueOnProcessData(ev);
