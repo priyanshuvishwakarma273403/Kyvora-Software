@@ -1,6 +1,15 @@
 import { IKyvoraCollaborationService } from '../common/kyvoraCollaborationService.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { IRequestService, asJson } from '../../../../platform/request/common/request.js';
+import { IFileService } from '../../../../platform/files/common/files.js';
+import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
+import { IEditorService } from '../../../services/editor/common/editorService.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { URI } from '../../../../base/common/uri.js';
+import { VSBuffer } from '../../../../base/common/buffer.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
+
 
 export class CollaborationPanel extends Disposable {
 	public static readonly VIEW_ID = 'kyvora.collaborationView';
@@ -9,7 +18,12 @@ export class CollaborationPanel extends Disposable {
 
 	constructor(
 		@IKyvoraCollaborationService private readonly collabService: IKyvoraCollaborationService,
-		@ITelemetryService private readonly telemetryService: ITelemetryService
+		@ITelemetryService private readonly telemetryService: ITelemetryService,
+		@IRequestService private readonly requestService: IRequestService,
+		@IFileService private readonly fileService: IFileService,
+		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
+		@IEditorService private readonly editorService: IEditorService,
+		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
 		this.registerListeners();
@@ -90,7 +104,7 @@ export class CollaborationPanel extends Disposable {
 		}));
 	}
 
-	public async handleMessage(message: any): Promise<void> {
+		public async handleMessage(message: any): Promise<void> {
 		switch (message.command) {
 			case 'login':
 				const loginSuccess = await this.collabService.login(message.username, message.password);
@@ -138,6 +152,143 @@ export class CollaborationPanel extends Disposable {
 			case 'requestStateSync':
 				this.syncState();
 				break;
+			case 'askAi':
+				await this.handleAiQuery(message.text);
+				break;
+		}
+	}
+
+	private async handleAiQuery(text: string): Promise<void> {
+		try {
+			this.postProgressUpdate('Analyzing your request...');
+
+			const serverUrl = this.configurationService.getValue<string>('kyvora.collaboration.serverUrl') || 'http://localhost:8080';
+			const cleanUrl = serverUrl.replace(/\/$/, '');
+			const apiUrl = `${cleanUrl}/api/v1/ai/completion`;
+
+			const workspaceFolders = this.workspaceContextService.getWorkspace().folders;
+			const rootFolder = workspaceFolders[0];
+			let workspaceInfo = 'No folder open.';
+			if (rootFolder) {
+				workspaceInfo = `Workspace Root: ${rootFolder.uri.fsPath}\n`;
+				try {
+					const children = await this.fileService.resolve(rootFolder.uri);
+					if (children && children.children) {
+						workspaceInfo += 'Files in workspace root:\n';
+						for (const child of children.children) {
+							workspaceInfo += ` - ${child.name} (${child.isDirectory ? 'directory' : 'file'})\n`;
+						}
+					}
+				} catch (e) {
+					// ignore
+				}
+			}
+
+			const systemPrompt = `You are Kyvora AI, a highly advanced agentic coding assistant integrated in Kyvora Studio.
+You must help the developer by writing complete, high-quality code and making filesystem edits.
+IMPORTANT: You MUST NOT use any emojis in your response. Not a single emoji is allowed.
+
+${rootFolder ? `Active Workspace Info:
+${workspaceInfo}` : ''}
+
+When you want to create a new file or write to an existing file, you MUST write your changes in one of the following XML-like formats:
+
+To CREATE a new file:
+<create_file path="path/to/file.ext">
+complete file content here
+</create_file>
+
+To EDIT/REWRITE an existing file's content completely:
+<write_file path="path/to/file.ext">
+complete new content here
+</write_file>
+
+Always specify paths relative to the workspace root.
+Please describe your thoughts first (without using emojis), then provide the file actions, and finally summarize what you did. Keep your response clean, professional, and precise.`;
+
+			const prompt = `${systemPrompt}\n\nUser Question:\n${text}`;
+
+			const context = await this.requestService.request({
+				type: 'POST',
+				url: apiUrl,
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				data: JSON.stringify({
+					provider: 'gemini',
+					model: 'gemini-1.5-pro',
+					prompt: prompt
+				}),
+				callSite: 'kyvoraAiQuery'
+			}, CancellationToken.None);
+
+			if (context.res.statusCode !== 200) {
+				const errMsg = `Server returned status code ${context.res.statusCode}`;
+				this.postAiResponse(`Sorry, I encountered an error communicating with the Kyvora AI backend: ${errMsg}`);
+				return;
+			}
+
+			const data = await asJson<any>(context);
+			const responseText = data?.text || 'No response from AI.';
+
+			await this.processFileActions(responseText);
+			this.postAiResponse(responseText);
+
+		} catch (e: any) {
+			console.error('AI Query error:', e);
+			this.postAiResponse(`Error: ${e.message || e}`);
+		}
+	}
+
+	private postProgressUpdate(text: string): void {
+		this._webview?.postMessage({
+			type: 'aiProgressUpdate',
+			text
+		});
+	}
+
+	private postAiResponse(text: string): void {
+		this._webview?.postMessage({
+			type: 'aiResponse',
+			text
+		});
+	}
+
+	private async processFileActions(text: string): Promise<void> {
+		const workspaceFolders = this.workspaceContextService.getWorkspace().folders;
+		const rootFolder = workspaceFolders[0];
+		if (!rootFolder) {
+			return;
+		}
+
+		const createFileRegex = /<create_file\s+path="([^"]+)">([\s\S]*?)<\/create_file>/g;
+		const writeFileRegex = /<write_file\s+path="([^"]+)">([\s\S]*?)<\/write_file>/g;
+
+		let match;
+		while ((match = createFileRegex.exec(text)) !== null) {
+			const relPath = match[1];
+			const content = match[2];
+			this.postProgressUpdate(`Creating file: ${relPath}`);
+			try {
+				const fileUri = URI.joinPath(rootFolder.uri, relPath);
+				await this.fileService.createFile(fileUri, VSBuffer.fromString(content), { overwrite: true });
+				await this.editorService.openEditor({ resource: fileUri });
+			} catch (e) {
+				console.error(`Failed to create file ${relPath}:`, e);
+			}
+		}
+
+		while ((match = writeFileRegex.exec(text)) !== null) {
+			const relPath = match[1];
+			const content = match[2];
+			this.postProgressUpdate(`Writing to file: ${relPath}`);
+			try {
+				const fileUri = URI.joinPath(rootFolder.uri, relPath);
+				await this.fileService.writeFile(fileUri, VSBuffer.fromString(content));
+				await this.editorService.openEditor({ resource: fileUri });
+			} catch (e) {
+				console.error(`Failed to write to file ${relPath}:`, e);
+			}
 		}
 	}
 
@@ -430,6 +581,16 @@ export class CollaborationPanel extends Disposable {
 			align-self: flex-end;
 		}
 
+		.chat-bubble.assistant {
+			background: var(--bg-hover);
+			border-color: var(--border-accent);
+			align-self: flex-start;
+		}
+
+		@keyframes spin {
+			to { transform: rotate(360deg); }
+		}
+
 		.chat-sender {
 			font-weight: 600;
 			font-size: 11px;
@@ -638,6 +799,7 @@ export class CollaborationPanel extends Disposable {
 			<button class="tab-btn active" onclick="switchTab('sessions')">Sessions</button>
 			<button class="tab-btn" onclick="switchTab('presence')">Participants</button>
 			<button class="tab-btn" onclick="switchTab('chat')">Live Chat</button>
+			<button class="tab-btn" onclick="switchTab('ai')">Kyvora AI</button>
 			<button class="tab-btn" onclick="switchTab('activity')">Activity</button>
 		</div>
 
@@ -710,6 +872,24 @@ export class CollaborationPanel extends Disposable {
 				<div class="chat-input-container">
 					<input type="text" id="chatInput" class="chat-input" placeholder="Type a message..." onkeydown="if(event.key === 'Enter') sendChatMessage()" />
 					<button class="btn" onclick="sendChatMessage()">Send</button>
+				</div>
+			</div>
+
+			<!-- Kyvora AI Tab -->
+			<div id="ai-tab" class="tab-panel chat-container">
+				<div class="chat-messages" id="aiMessages">
+					<div class="chat-bubble assistant">
+						<div class="chat-sender">Kyvora AI</div>
+						<div class="chat-text">Hello! I am Kyvora AI, your autonomous programming assistant. I can write code, create files, and fix errors in your workspace. How can I help you today?</div>
+					</div>
+				</div>
+				<div id="aiProgress" style="display: none; padding: 8px; color: var(--accent-bright); font-size: 11px; text-align: center;">
+					<span class="spinner" style="display: inline-block; width: 12px; height: 12px; border: 2px solid var(--accent-primary); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 6px; vertical-align: middle;"></span>
+					<span id="aiProgressText">Processing request...</span>
+				</div>
+				<div class="chat-input-container">
+					<input type="text" id="aiInput" class="chat-input" placeholder="Ask Kyvora AI to write code or create files..." onkeydown="if(event.key === 'Enter') sendAiMessage()" />
+					<button class="btn" onclick="sendAiMessage()">Ask</button>
 				</div>
 			</div>
 
@@ -852,6 +1032,13 @@ export class CollaborationPanel extends Disposable {
 						showAlert('Signup failed. Username or email may already be registered.', false);
 					}
 					break;
+				case 'aiResponse':
+					document.getElementById('aiProgress').style.display = 'none';
+					renderAiMessage('Kyvora AI', msg.text, false);
+					break;
+				case 'aiProgressUpdate':
+					document.getElementById('aiProgressText').textContent = msg.text;
+					break;
 				case 'sessionError':
 					showMainAlert(msg.message, false);
 					break;
@@ -961,7 +1148,7 @@ export class CollaborationPanel extends Disposable {
 						</div>
 					</div>
 					<div class="participant-actions">
-						<span style="font-size: 10px; color: var(--text-muted)">\${p.voiceMuted ? '🔇' : '🎙️'}</span>
+						<span style="font-size: 10px; color: var(--text-muted)">\${p.voiceMuted ? 'Muted' : 'Mic Active'}</span>
 					</div>
 				\`;
 				list.appendChild(item);
@@ -1069,6 +1256,55 @@ export class CollaborationPanel extends Disposable {
 				\`;
 				list.appendChild(item);
 			});
+		}
+
+		function sendAiMessage() {
+			const input = document.getElementById('aiInput');
+			const text = input.value.trim();
+			if (!text) return;
+
+			renderAiMessage(state.username || 'User', text, true);
+			input.value = '';
+
+			document.getElementById('aiProgress').style.display = 'block';
+			document.getElementById('aiProgressText').textContent = 'Analyzing request...';
+
+			vscode.postMessage({ command: 'askAi', text: text });
+		}
+
+		function renderAiMessage(sender, text, isSelf) {
+			const list = document.getElementById('aiMessages');
+			const bubble = document.createElement('div');
+			bubble.className = 'chat-bubble' + (isSelf ? ' self' : ' assistant');
+
+			const senderDiv = document.createElement('div');
+			senderDiv.className = 'chat-sender';
+			senderDiv.textContent = sender;
+			bubble.appendChild(senderDiv);
+
+			const textDiv = document.createElement('div');
+			textDiv.className = 'chat-text';
+			
+			let formattedText = text
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;");
+			
+			formattedText = formattedText.replace(/```([\s\S]*?)```/g, (match, code) => {
+				return '<pre style="background: var(--bg-deepest); padding: 8px; border-radius: 4px; overflow-x: auto; margin-top: 6px; font-family: monospace; font-size: 11px; border: 1px solid var(--border-subtle);">' + code.trim() + '</pre>';
+			});
+
+			textDiv.innerHTML = formattedText;
+			bubble.appendChild(textDiv);
+
+			const timeDiv = document.createElement('div');
+			timeDiv.className = 'chat-time';
+			const now = new Date();
+			timeDiv.textContent = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+			bubble.appendChild(timeDiv);
+
+			list.appendChild(bubble);
+			list.scrollTop = list.scrollHeight;
 		}
 
 		// Initial request for recent rooms and state sync
