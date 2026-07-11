@@ -9,6 +9,7 @@ import { IEditorService } from '../../../services/editor/common/editorService.js
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
+import { KyvoraPluginAdvancedRuntime } from './kyvoraPluginAdvancedRuntime.js';
 
 export interface IKyvoraPluginContext {
 	modelService: IModelService;
