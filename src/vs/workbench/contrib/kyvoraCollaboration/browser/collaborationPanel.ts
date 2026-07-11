@@ -1290,7 +1290,7 @@ Please describe your thoughts first (without using emojis), then provide the fil
 				.replace(/</g, "&lt;")
 				.replace(/>/g, "&gt;");
 			
-			formattedText = formattedText.replace(/```([\s\S]*?)```/g, (match, code) => {
+			formattedText = formattedText.replace(/\`\`\`([\s\S]*?)\`\`\`/g, (match, code) => {
 				return '<pre style="background: var(--bg-deepest); padding: 8px; border-radius: 4px; overflow-x: auto; margin-top: 6px; font-family: monospace; font-size: 11px; border: 1px solid var(--border-subtle);">' + code.trim() + '</pre>';
 			});
 
