@@ -7,7 +7,6 @@ import { INotificationService, Severity } from '../../../../platform/notificatio
 import { ITerminalService, ITerminalInstance } from '../../terminal/browser/terminal.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { URI } from '../../../../base/common/uri.js';
-import { VSBuffer } from '../../../../base/common/buffer.js';
 
 export class KyvoraAutoAutomation extends Disposable implements IWorkbenchContribution {
 	private debounceTimer: any = null;
@@ -28,15 +27,17 @@ export class KyvoraAutoAutomation extends Disposable implements IWorkbenchContri
 	}
 
 	private registerModelListeners(): void {
+		for (const model of this.modelService.getModels()) {
+			this.hookModel(model);
+		}
 		this._register(this.modelService.onModelAdded(model => {
-			this.checkImports(model.getValue(), model.uri);
+			this.hookModel(model);
 		}));
+	}
 
-		this._register(this.modelService.onModelContentChanged(e => {
-			const model = this.modelService.getModel(e.uri);
-			if (model) {
-				this.checkImports(model.getValue(), model.uri);
-			}
+	private hookModel(model: any): void {
+		this._register(model.onDidChangeContent(() => {
+			this.checkImports(model.getValue(), model.uri);
 		}));
 	}
 

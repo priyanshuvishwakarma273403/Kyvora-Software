@@ -177,8 +177,8 @@ export class KyvoraAdvancedView extends ViewPane {
 				const activeEditor = this.editorService.activeTextEditorControl;
 				const selection = activeEditor?.getSelection();
 				const model = activeEditor?.getModel();
-				if (model && selection) {
-					const text = model.getValueInRange(selection);
+				if (model && selection && typeof (model as any).getValueInRange === 'function') {
+					const text = (model as any).getValueInRange(selection);
 					await this.commandService.executeCommand('workbench.action.chat.open', {
 						query: `Explain the following code snippet:\n\n\`\`\`\n${text}\n\`\`\``
 					});
