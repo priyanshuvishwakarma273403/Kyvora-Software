@@ -392,10 +392,12 @@ export class KyvoraPulsePlugin extends BaseKyvoraPlugin {
 // ==========================================
 export class KyvoraPluginManager extends Disposable {
 	private readonly plugins: Map<string, IKyvoraPlugin> = new Map();
+	public readonly advancedRuntime: KyvoraPluginAdvancedRuntime;
 
 	constructor(private readonly context: IKyvoraPluginContext) {
 		super();
 		this.initializeRegistry();
+		this.advancedRuntime = this._register(new KyvoraPluginAdvancedRuntime(this.context, this.plugins));
 		this.activateAllEnabled();
 	}
 
@@ -427,24 +429,24 @@ export class KyvoraPluginManager extends Disposable {
 			new IamMinifierPlugin(), new FeatureFlagPlugin(), new SecretLeakPlugin(),
 			new ColdStartPlugin(),
 			// Category 6
-			new CweTracerPlugin(), new PrivacyScannerPlugin(), new CryptoAuditorPlugin(),
-			new CvePatcherPlugin(), new LicenseCheckerPlugin(), new OwaspLinterPlugin(),
+			new CWETracerPlugin(), new PrivacyScannerPlugin(), new CryptoAuditorPlugin(),
+			new CVEPatcherPlugin(), new LicenseCheckerPlugin(), new OWASPLinterPlugin(),
 			new ContainerCorrelatorPlugin(), new RateLimitPlugin(), new ThreatModelingPlugin(),
 			new SmartContractPlugin(),
 			// Category 7
 			new NPlusOnePlugin(), new SchemaDriftPlugin(), new MockSeederPlugin(),
-			new RestConverterPlugin(), new QueryTunerPlugin(), new ApiDocPlugin(),
-			new IndexRecommendationPlugin(), new SdkGeneratorPlugin(), new MigrationPreviewPlugin(),
-			new WsMockPlugin(),
+			new RestConverterPlugin(), new QueryTunerPlugin(), new APIDocPlugin(),
+			new IndexRecommendationPlugin(), new SDKGeneratorPlugin(), new MigrationPreviewPlugin(),
+			new WSMockPlugin(),
 			// Category 8
-			new HotPathPlugin(), new GcOverlayPlugin(), new CacheMissPlugin(),
+			new HotPathPlugin(), new GCOverlayPlugin(), new CacheMissPlugin(),
 			new BundleSizePlugin(), new ComplexityPlugin(), new FrameDropPlugin(),
 			new AssetOptimizerPlugin(), new PayloadMinimizerPlugin(), new DistributedTracingPlugin(),
 			new EdgeLatencyPlugin(),
 			// Category 9
 			new TranspilerPlugin(), new DecouplerPlugin(), new AsyncAwaitPlugin(),
 			new TailwindPlugin(), new VersionMigrationPlugin(), new ClassComponentPlugin(),
-			new TypeSafetyPlugin(), new OrmSwitcherPlugin(), new MacroGeneratorPlugin(),
+			new TypeSafetyPlugin(), new ORMSwitcherPlugin(), new MacroGeneratorPlugin(),
 			new DesignPatternPlugin(),
 			// Category 10
 			new TaskDecompositionPlugin(), new HabitAnalyticsPlugin(), new SandboxLearningPlugin(),
@@ -462,7 +464,7 @@ export class KyvoraPluginManager extends Disposable {
 		for (const plugin of this.plugins.values()) {
 			if (plugin.isEnabled) {
 				try {
-					plugin.activate(this.context);
+					this.advancedRuntime.activatePluginSandboxed(plugin);
 				} catch (e) {
 					console.error(`Failed to activate plugin ${plugin.name}:`, e);
 				}
@@ -483,9 +485,11 @@ export class KyvoraPluginManager extends Disposable {
 		if (plugin) {
 			plugin.isEnabled = enabled;
 			if (enabled) {
-				plugin.activate(this.context);
+				this.advancedRuntime.activatePluginSandboxed(plugin);
 			} else {
 				plugin.deactivate();
+				this.advancedRuntime.bgHost.stopBackgroundService(plugin.id);
+				this.advancedRuntime.monitor.killRunningTasks(plugin.id);
 			}
 		}
 	}
