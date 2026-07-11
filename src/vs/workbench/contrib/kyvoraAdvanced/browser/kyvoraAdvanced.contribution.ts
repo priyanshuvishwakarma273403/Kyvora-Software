@@ -8,17 +8,10 @@ import { KyvoraAdvancedView } from './kyvoraAdvancedView.js';
 import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../common/contributions.js';
 import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
 import { KyvoraAutoAutomation } from './kyvoraAutoAutomation.js';
-import { KyvoraTerminalWelcomeContribution } from './kyvoraTerminalWelcome.js';
 
 // ---- Register Background Automation Service ----
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
 	KyvoraAutoAutomation,
-	LifecyclePhase.Restored
-);
-
-// ---- Register Custom Terminal Welcome Experience ----
-Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
-	KyvoraTerminalWelcomeContribution,
 	LifecyclePhase.Restored
 );
 
