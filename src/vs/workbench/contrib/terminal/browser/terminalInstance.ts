@@ -1654,6 +1654,31 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	}
 
 	private _onProcessData(ev: IProcessDataEvent): void {
+		if (!this._welcomeScreenPrinted && !this._shellLaunchConfig.attachPersistentProcess) {
+			this._welcomeScreenPrinted = true;
+			this._welcomeDataPromise.then(() => {
+				const welcomeText = getWelcomeScreenText({
+					workspaceName: this._workspaceContextService.getWorkspace().folders[0]?.name || 'Kyvora Workspace',
+					gitBranch: this._gitBranch,
+					currentTime: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+					osName: OS === OperatingSystem.Windows ? 'Windows' : OS === OperatingSystem.Macintosh ? 'macOS' : 'Linux',
+					nodeVer: typeof process !== 'undefined' ? process.version : 'v18.17.1',
+					javaVer: this._javaVer,
+					aiModel: this._configurationService.getValue<string>('kyvora.ai.model') || 'mixtral-8x7b-32768',
+					isTrusted: this._workspaceTrustRequestService.isWorkspaceTrusted(),
+					themeService: this._themeService,
+					configurationService: this._configurationService,
+					cols: this.xterm?.raw.cols || 80
+				});
+				this._writeProcessData(welcomeText + '\r\n');
+				this._continueOnProcessData(ev);
+			});
+			return;
+		}
+		this._continueOnProcessData(ev);
+	}
+
+	private _continueOnProcessData(ev: IProcessDataEvent): void {
 		// Ensure events are split by SI command execute and command finished sequence to ensure the
 		// output of the command can be read by extensions and the output of the command is of a
 		// consistent form respectively. This must be done here as xterm.js does not currently have
@@ -1693,6 +1718,39 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 			cb?.();
 			this._onData.fire(data);
 		});
+	}
+
+	private async _queryGitBranchAndJava(): Promise<void> {
+		const folder = this._workspaceContextService.getWorkspace().folders[0];
+		if (!folder) {
+			return;
+		}
+
+		// Read Git branch
+		const gitHeadUri = URI.joinPath(folder.uri, '.git', 'HEAD');
+		try {
+			if (await this._fileService.exists(gitHeadUri)) {
+				const stat = await this._fileService.readFile(gitHeadUri);
+				const headContent = stat.value.toString().trim();
+				if (headContent.startsWith('ref: ')) {
+					this._gitBranch = headContent.replace('ref: refs/heads/', '');
+				} else {
+					this._gitBranch = headContent.substring(0, 7);
+				}
+			}
+		} catch {
+			// ignore
+		}
+
+		// Check Java project
+		const pomUri = URI.joinPath(folder.uri, 'pom.xml');
+		try {
+			if (await this._fileService.exists(pomUri)) {
+				this._javaVer = 'JDK 17';
+			}
+		} catch {
+			// ignore
+		}
 	}
 
 	/**
