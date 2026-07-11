@@ -13,8 +13,10 @@ import { IEditorService } from '../../../services/editor/common/editorService.js
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
+import { KyvoraPluginManager } from './kyvoraPluginManager.js';
 
 export class KyvoraAutoAutomation extends Disposable implements IWorkbenchContribution {
+	private pluginManager!: KyvoraPluginManager;
 	private debounceTimer: any = null;
 	private readonly installedLibs = new Set<string>();
 	private readonly promptedErrors = new Set<string>();
