@@ -42,6 +42,17 @@ export class KyvoraAutoAutomation extends Disposable implements IWorkbenchContri
 		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
+		this.pluginManager = this._register(new KyvoraPluginManager({
+			modelService: this.modelService,
+			contextService: this.contextService,
+			fileService: this.fileService,
+			notificationService: this.notificationService,
+			terminalService: this.terminalService,
+			commandService: this.commandService,
+			editorService: this.editorService,
+			storageService: this.storageService,
+			configurationService: this.configurationService
+		}));
 		this.registerModelListeners();
 		this.registerTerminalListeners();
 		this.registerCollaborationListeners();
