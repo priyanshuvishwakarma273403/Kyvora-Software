@@ -87,23 +87,37 @@ const TIPS_LIST = [
 ];
 
 const EAGLE_ASCII = `
-                                 .---.
-                       _..---''     ''---.._
-                 _.-''                       ''-._
-             _.-'                                 '-._
-           /                                           \\
-          |            _  _             _  _            |
-          |           ( \\/ )           ( \\/ )           |
-           \\           \\  /             \\  /           /
-            '.          \\/               \\/          .'
-              '-._                               _.-'
-                  '-._                       _.-'
-                      '-._               _.-'
-                          '--.._____..--'
-                              /     \\
-                             (o)   (o)
-                              \\  V  /
-                               \\___/
+                               /T /I
+                              / |/ | .-~/
+                          T\\ Y  I  |/  /  _
+         /T               | \\I  |  I  Y.-~/
+        I l   /I       T\\ |  |  l  |  T  /
+ __  | \\l   \\l  \\I l __l  l   \\   \\`  _. |
+ \\ ~-l  \\`\\   \\`\\  \\  \\\\ ~\\  \\   \\`. .-~   |
+  \\   ~-. "-.  \\`  \\  ^._ ^. "-.  /  \\   |
+.--~-._  ~-  \\`  _  ~-_.-\"-.\" ._ /._ .\" ./
+ >--.  ~-.   ._  ~>-\"    \"\\\\   7   7   ]
+^.___~\"--._    ~-{  .-~ .  \\`\\ Y . /    |
+ <__ ~\"-.  ~       /_/   \\   \\I  Y   : |
+   ^-.__           ~(_/   \\   >._:   | l______
+       ^--.,___.-~"  /_/   !  \\`-.~\"--l_ /     ~\"-.
+              (_/ .  ~(   /'     \"~\"--,Y   -=b-. _)
+               (_/ .  \\  :           / l      c\"~o \\
+                \\ /    \\`.    .     .^   \\_.-~\"~--.  )
+                 (_/ .   \\`  /     /       !       )/
+                  / / _.   '.   .':      /        '
+                  ~(_/ .   /    _  \\`  .-<_      -Row
+                    /_/ . ' .-~" \\`.  / \\  \\          ,z=.
+                    ~( /   '  :   | K   \"-.~-.______//
+                      \"-,.    l   I/ \\_    __{--->._(==.
+                       //(     \\  <    ~\"~"     //
+                      /' /\\     \\  \\     ,v=.  ((
+                    .^. / /\\     \"  }__ //===-  \\`
+                   / / ' '  \"-.,__ {---(==-
+                 .^ '       :  T  ~\"   ll
+                / .  .  . : | :!        \\\\
+               (_/  /   | | j-\"          ~^
+                 ~-<_(_.^-~"
 `;
 
 const LOGO_ASCII = `
@@ -128,22 +142,7 @@ export function getWelcomeScreenText(options: {
 	configurationService: IConfigurationService;
 	cols: number;
 }): string {
-	const workspaceName = options.workspaceName;
-	const gitBranch = options.gitBranch;
-	const currentTime = options.currentTime;
-	const osName = options.osName;
-	const nodeVer = options.nodeVer;
-	const javaVer = options.javaVer;
-	const aiModel = options.aiModel;
-	const isTrusted = options.isTrusted ? 'Trusted' : 'Untrusted';
-	const pluginCount = 128;
-	const kyvoraVer = '1.0.0';
-
-	// System details
-	const cpuStr = 'Apple M2 Pro';
-	const ramStr = '16.00 GB';
-	const cpuUsageStr = '12%';
-	const uptimeStr = '00:45:32';
+	const cols = options.cols || 80;
 
 	// Select Theme based on user setting
 	const isLightTheme = options.themeService.getColorTheme().type === 'light';
@@ -173,100 +172,32 @@ export function getWelcomeScreenText(options: {
 	}
 
 	const rst = '\x1b[0m';
-	const bld = '\x1b[1m';
 	const ec = theme.eagleColor;
 	const lc = theme.logoColor;
-	const pc = theme.panelColor;
-	const ac = theme.accentColor;
-	const tc = theme.textColor;
-
-	const cols = options.cols || 80;
-	const isCompact = cols < 85;
 
 	const lines: string[] = [];
 	lines.push('');
 
-	if (!isCompact) {
-		// Centered Eagle
-		EAGLE_ASCII.split('\n').forEach(line => {
-			if (line.trim()) {
-				lines.push(centerLine(`${ec}${line}${rst}`, cols));
-			}
-		});
-		lines.push('');
-
-		// Centered KYVORA Logo
-		LOGO_ASCII.split('\n').forEach(line => {
-			if (line.trim()) {
-				lines.push(centerLine(`${lc}${line}${rst}`, cols));
-			}
-		});
-		lines.push('');
-	} else {
-		lines.push(centerLine(`${bld}${lc}=== KYVORA AUTOMATED DEVELOPMENT ENVIRONMENT ===${rst}`, cols));
-		lines.push('');
-	}
-
-	// Centered title helper
-	lines.push(centerLine(`${ac}------ Welcome to Kyvora IDE ------${rst}`, cols));
-	lines.push(centerLine(`${ac}AI-FIRST DEVELOPMENT ENVIRONMENT${rst}`, cols));
+	// Centered Eagle
+	EAGLE_ASCII.split('\n').forEach(line => {
+		if (line.trim()) {
+			lines.push(centerLine(`${ec}${line}${rst}`, cols));
+		} else {
+			lines.push('');
+		}
+	});
 	lines.push('');
 
-	// Build 3-column welcome panel (width 76)
-	// Border length 76: '┌' + '─'*24 + '┬' + '─'*24 + '┬' + '─'*24 + '┐'
-	const panelBorderCol = pc;
-	const labelCol = tc;
-
-	lines.push(centerLine(`${panelBorderCol}┌────────────────────────┬────────────────────────┬────────────────────────┐${rst}`, cols));
-
-	// Row 1
-	const col1_1 = padRight(`Workspace  : ${labelCol}${workspaceName}${rst}`, 22);
-	const col1_2 = padRight(`Active Model: ${labelCol}${aiModel}${rst}`, 22);
-	const col1_3 = padRight(`OS         : ${labelCol}${osName}${rst}`, 22);
-	lines.push(centerLine(`${panelBorderCol}│${rst} ${col1_1} ${panelBorderCol}│${rst} ${col1_2} ${panelBorderCol}│${rst} ${col1_3} ${panelBorderCol}│${rst}`, cols));
-
-	// Row 2
-	const col2_1 = padRight(`Directory  : ${labelCol}${workspaceName}${rst}`, 22);
-	const col2_2 = padRight(`Plugins    : ${labelCol}${pluginCount}${rst}`, 22);
-	const col2_3 = padRight(`CPU        : ${labelCol}${cpuStr}${rst}`, 22);
-	lines.push(centerLine(`${panelBorderCol}│${rst} ${col2_1} ${panelBorderCol}│${rst} ${col2_2} ${panelBorderCol}│${rst} ${col2_3} ${panelBorderCol}│${rst}`, cols));
-
-	// Row 3
-	const col3_1 = padRight(`Git Branch : ${labelCol}${gitBranch}${rst}`, 22);
-	const col3_2 = padRight(`Shell      : ${labelCol}powershell${rst}`, 22);
-	const col3_3 = padRight(`Memory     : ${labelCol}${ramStr}${rst}`, 22);
-	lines.push(centerLine(`${panelBorderCol}│${rst} ${col3_1} ${panelBorderCol}│${rst} ${col3_2} ${panelBorderCol}│${rst} ${col3_3} ${panelBorderCol}│${rst}`, cols));
-
-	// Row 4
-	const col4_1 = padRight(`Git Status : ${labelCol}Clean${rst}`, 22);
-	const col4_2 = padRight(`Node Ver   : ${labelCol}${nodeVer}${rst}`, 22);
-	const col4_3 = padRight(`CPU Usage  : ${labelCol}${cpuUsageStr}${rst}`, 22);
-	lines.push(centerLine(`${panelBorderCol}│${rst} ${col4_1} ${panelBorderCol}│${rst} ${col4_2} ${panelBorderCol}│${rst} ${col4_3} ${panelBorderCol}│${rst}`, cols));
-
-	// Row 5
-	const col5_1 = padRight(`Kyvora Ver : ${labelCol}${kyvoraVer}${rst}`, 22);
-	const col5_2 = padRight(`Java Ver   : ${labelCol}${javaVer}${rst}`, 22);
-	const col5_3 = padRight(`Uptime     : ${labelCol}${uptimeStr}${rst}`, 22);
-	lines.push(centerLine(`${panelBorderCol}│${rst} ${col5_1} ${panelBorderCol}│${rst} ${col5_2} ${panelBorderCol}│${rst} ${col5_3} ${panelBorderCol}│${rst}`, cols));
-
-	lines.push(centerLine(`${panelBorderCol}└────────────────────────┴────────────────────────┴────────────────────────┘${rst}`, cols));
+	// Centered KYVORA Logo
+	LOGO_ASCII.split('\n').forEach(line => {
+		if (line.trim()) {
+			lines.push(centerLine(`${lc}${line}${rst}`, cols));
+		} else {
+			lines.push('');
+		}
+	});
 	lines.push('');
 
-	// Side-by-side MOTD & Tip boxes
-	const randomMotd = MOTD_LIST[Math.floor(Math.random() * MOTD_LIST.length)];
-	const randomTip = TIPS_LIST[Math.floor(Math.random() * TIPS_LIST.length)];
-
-	const motdBoxLines = buildBox("MOTD", wrapText(randomMotd, 33), 37, pc, tc, rst);
-	const tipBoxLines = buildBox("TIP OF THE DAY", wrapText(randomTip, 33), 37, pc, tc, rst);
-
-	const boxGap = '  ';
-	for (let i = 0; i < Math.max(motdBoxLines.length, tipBoxLines.length); i++) {
-		const motdLine = motdBoxLines[i] || ' '.repeat(37);
-		const tipLine = tipBoxLines[i] || ' '.repeat(37);
-		lines.push(centerLine(motdLine + boxGap + tipLine, cols));
-	}
-
-	lines.push('');
 	return lines.join('\r\n');
 }
 
@@ -277,48 +208,4 @@ function centerLine(line: string, width: number): string {
 	}
 	const padding = Math.floor((width - cleanLine.length) / 2);
 	return ' '.repeat(padding) + line;
-}
-
-function padRight(text: string, length: number): string {
-	const cleanText = text.replace(/\x1b\[[0-9;]*m/g, '');
-	if (cleanText.length >= length) {
-		return text;
-	}
-	return text + ' '.repeat(length - cleanText.length);
-}
-
-function wrapText(text: string, width: number): string[] {
-	const words = text.split(' ');
-	const lines: string[] = [];
-	let currentLine = '';
-	for (const word of words) {
-		if ((currentLine + ' ' + word).trim().length <= width) {
-			currentLine = (currentLine + ' ' + word).trim();
-		} else {
-			lines.push(currentLine);
-			currentLine = word;
-		}
-	}
-	if (currentLine) {
-		lines.push(currentLine);
-	}
-	return lines;
-}
-
-function buildBox(title: string, contentLines: string[], width: number, borderCol: string, textCol: string, rst: string): string[] {
-	const lines: string[] = [];
-	const titlePart = `── ${title} `;
-	const remaining = width - 2 - titlePart.length;
-	lines.push(`${borderCol}┌${titlePart}${'─'.repeat(remaining)}┐${rst}`);
-
-	// Pad all lines to match width
-	const contentHeight = 3; // Fixed height for alignment
-	for (let i = 0; i < contentHeight; i++) {
-		const rawLine = contentLines[i] || '';
-		const padded = padRight(rawLine, width - 4);
-		lines.push(`${borderCol}│${rst} ${textCol}${padded}${rst} ${borderCol}│${rst}`);
-	}
-
-	lines.push(`${borderCol}└${'─'.repeat(width - 2)}┘${rst}`);
-	return lines;
 }
