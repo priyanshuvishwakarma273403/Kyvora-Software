@@ -5,6 +5,15 @@ import { IViewContainersRegistry, IViewsRegistry, Extensions as ViewContainerExt
 import { kyvoraAdvancedViewIcon } from './kyvoraAdvancedIcons.js';
 import { KYVORA_ADVANCED_VIEW_CONTAINER_ID, KyvoraAdvancedViewPaneContainer } from './kyvoraAdvancedViewPaneContainer.js';
 import { KyvoraAdvancedView } from './kyvoraAdvancedView.js';
+import { IWorkbenchContributionsRegistry, Extensions as WorkbenchExtensions } from '../../../common/contributions.js';
+import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
+import { KyvoraAutoAutomation } from './kyvoraAutoAutomation.js';
+
+// ---- Register Background Automation Service ----
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+	KyvoraAutoAutomation,
+	LifecyclePhase.Restored
+);
 
 // ---- Register the View Container (sidebar icon) ----
 const kyvoraAdvancedViewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
