@@ -33,6 +33,21 @@ async function ensureNodeModules() {
 }
 
 async function getElectron() {
+	const product = JSON.parse(await fs.readFile(path.join(rootDir, 'product.json'), 'utf8'));
+	const nameShort = product.nameShort;
+	let executableSubpath = '';
+	if (process.platform === 'win32') {
+		executableSubpath = path.join('.build', 'electron', `${nameShort}.exe`);
+	} else if (process.platform === 'darwin') {
+		executableSubpath = path.join('.build', 'electron', `${nameShort}.app`, 'Contents', 'MacOS', nameShort);
+	} else {
+		executableSubpath = path.join('.build', 'electron', product.applicationName);
+	}
+
+	if (await exists(executableSubpath)) {
+		console.log(`Electron executable found at ${executableSubpath}, skipping download.`);
+		return;
+	}
 	await runProcess(npm, ['run', 'electron']);
 }
 
