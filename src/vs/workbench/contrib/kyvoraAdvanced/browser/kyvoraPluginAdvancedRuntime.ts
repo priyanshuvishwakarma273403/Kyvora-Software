@@ -1,6 +1,6 @@
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
-import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
+import { Severity } from '../../../../platform/notification/common/notification.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IKyvoraPlugin, IKyvoraPluginContext } from './kyvoraPluginManager.js';
