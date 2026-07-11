@@ -1654,7 +1654,7 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	}
 
 	private _onProcessData(ev: IProcessDataEvent): void {
-		if (!this._welcomeScreenPrinted && !this._shellLaunchConfig.attachPersistentProcess) {
+		if (!this._welcomeScreenPrinted && !this._shellLaunchConfig.hideFromUser && !this._shellLaunchConfig.isFeatureTerminal) {
 			this._welcomeScreenPrinted = true;
 			this._welcomeDataPromise.then(() => {
 				const welcomeText = getWelcomeScreenText({
