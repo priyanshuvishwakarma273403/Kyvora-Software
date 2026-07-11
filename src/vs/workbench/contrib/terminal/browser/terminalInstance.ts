@@ -1674,8 +1674,32 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 						configurationService: this._configurationService,
 						cols: this.xterm?.raw.cols || 80
 					});
+
+					// Extract and execute any leading clear/reset sequences first
+					for (let i = 0; i < this._earlyProcessDataBuffer.length; i++) {
+						let event = this._earlyProcessDataBuffer[i];
+						if (i === 0) {
+							let eventData = event.data;
+							if (eventData.startsWith('\x1bc')) {
+								this._writeProcessData('\x1bc');
+								eventData = eventData.substring(2);
+							} else if (eventData.startsWith('\x1b[H\x1b[2J')) {
+								this._writeProcessData('\x1b[H\x1b[2J');
+								eventData = eventData.substring(6);
+							} else if (eventData.startsWith('\x1b[2J')) {
+								this._writeProcessData('\x1b[2J');
+								eventData = eventData.substring(4);
+							}
+							event = { ...event, data: eventData };
+							this._earlyProcessDataBuffer[i] = event;
+						}
+					}
+
+					// Now print the welcome banner
 					this._writeProcessData(welcomeText + '\r\n');
 					this._welcomeScreenPrinted = true;
+
+					// Continue with the remaining buffered process data
 					for (const bufferedEv of this._earlyProcessDataBuffer) {
 						this._continueOnProcessData(bufferedEv);
 					}
