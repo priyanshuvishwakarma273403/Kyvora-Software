@@ -1666,6 +1666,14 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 				this._welcomeScreenPrinting = true;
 				this._earlyProcessDataBuffer.push(ev);
 				this._welcomeDataPromise.then(() => {
+					const isTrusted = (() => {
+						try {
+							return (this._workspaceTrustRequestService as any).isWorkspaceTrusted?.() ?? true;
+						} catch {
+							return true;
+						}
+					})();
+
 					const welcomeText = getWelcomeScreenText({
 						workspaceName: this._workspaceContextService.getWorkspace().folders[0]?.name || 'Kyvora Workspace',
 						gitBranch: this._gitBranch,
@@ -1674,39 +1682,43 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 						nodeVer: typeof process !== 'undefined' ? process.version : 'v18.17.1',
 						javaVer: this._javaVer,
 						aiModel: this._configurationService.getValue<string>('kyvora.ai.model') || 'mixtral-8x7b-32768',
-						isTrusted: this._workspaceTrustRequestService.isWorkspaceTrusted(),
+						isTrusted,
 						themeService: this._themeService,
 						configurationService: this._configurationService,
 						cols: this.xterm?.raw.cols || 80
 					});
 
-					// Extract and execute any leading clear/reset sequences first
-					for (let i = 0; i < this._earlyProcessDataBuffer.length; i++) {
-						let event = this._earlyProcessDataBuffer[i];
-						if (i === 0) {
-							let eventData = event.data;
-							if (eventData.startsWith('\x1bc')) {
-								this._writeProcessData('\x1bc');
-								eventData = eventData.substring(2);
-							} else if (eventData.startsWith('\x1b[H\x1b[2J')) {
-								this._writeProcessData('\x1b[H\x1b[2J');
-								eventData = eventData.substring(6);
-							} else if (eventData.startsWith('\x1b[2J')) {
-								this._writeProcessData('\x1b[2J');
-								eventData = eventData.substring(4);
-							}
-							event = { ...event, data: eventData };
-							this._earlyProcessDataBuffer[i] = event;
+					// Check if we should reset/clear the terminal first
+					let shouldReset = false;
+					let shouldClear = false;
+					if (this._earlyProcessDataBuffer[0]) {
+						const firstData = this._earlyProcessDataBuffer[0].data;
+						if (firstData.includes('\x1bc')) {
+							shouldReset = true;
 						}
+						if (firstData.includes('\x1b[2J') || firstData.includes('\x1b[H\x1b[2J')) {
+							shouldClear = true;
+						}
+					}
+
+					if (shouldReset) {
+						this._writeProcessData('\x1bc');
+					} else if (shouldClear) {
+						this._writeProcessData('\x1b[H\x1b[2J');
 					}
 
 					// Now print the welcome banner
 					this._writeProcessData(welcomeText + '\r\n');
 					this._welcomeScreenPrinted = true;
 
-					// Continue with the remaining buffered process data
+					// Continue with the remaining buffered process data, stripping clear/reset codes
 					for (const bufferedEv of this._earlyProcessDataBuffer) {
-						this._continueOnProcessData(bufferedEv);
+						const cleanedData = bufferedEv.data
+							.replace(/\x1bc/g, '')
+							.replace(/\x1b\[2J/g, '')
+							.replace(/\x1b\[H\x1b\[2J/g, '')
+							.replace(/\x1b\[H\x1b\[J/g, '');
+						this._continueOnProcessData({ ...bufferedEv, data: cleanedData });
 					}
 					this._earlyProcessDataBuffer = [];
 				});
