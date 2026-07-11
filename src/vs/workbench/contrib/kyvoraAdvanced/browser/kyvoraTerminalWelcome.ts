@@ -178,34 +178,34 @@ export function getWelcomeScreenText(options: {
 	const lines: string[] = [];
 	lines.push('');
 
-	// Centered Eagle
-	EAGLE_ASCII.split('\n').forEach(line => {
-		if (line.trim()) {
-			lines.push(centerLine(`${ec}${line}${rst}`, cols));
-		} else {
-			lines.push('');
-		}
-	});
+	// Center Eagle as a block
+	lines.push(...centerBlock(EAGLE_ASCII, cols, ec, rst));
 	lines.push('');
 
-	// Centered KYVORA Logo
-	LOGO_ASCII.split('\n').forEach(line => {
-		if (line.trim()) {
-			lines.push(centerLine(`${lc}${line}${rst}`, cols));
-		} else {
-			lines.push('');
-		}
-	});
+	// Center KYVORA Logo as a block
+	lines.push(...centerBlock(LOGO_ASCII, cols, lc, rst));
 	lines.push('');
 
 	return lines.join('\r\n');
 }
 
-function centerLine(line: string, width: number): string {
-	const cleanLine = line.replace(/\x1b\[[0-9;]*m/g, '');
-	if (cleanLine.length >= width) {
-		return line;
-	}
-	const padding = Math.floor((width - cleanLine.length) / 2);
-	return ' '.repeat(padding) + line;
+function centerBlock(art: string, cols: number, colorPrefix: string, colorSuffix: string): string[] {
+	const lines = art.split('\n');
+	let maxLen = 0;
+	lines.forEach(line => {
+		const clean = line.replace(/\x1b\[[0-9;]*m/g, '');
+		if (clean.length > maxLen) {
+			maxLen = clean.length;
+		}
+	});
+
+	const paddingAmount = Math.max(0, Math.floor((cols - maxLen) / 2));
+	const padding = ' '.repeat(paddingAmount);
+
+	return lines.map(line => {
+		if (!line.trim()) {
+			return '';
+		}
+		return padding + colorPrefix + line + colorSuffix;
+	});
 }
