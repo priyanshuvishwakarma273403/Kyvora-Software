@@ -53,6 +53,7 @@ export class KyvoraAutoAutomation extends Disposable implements IWorkbenchContri
 			storageService: this.storageService,
 			configurationService: this.configurationService
 		}));
+		console.log(`Kyvora: Loaded ${this.pluginManager.getAllPlugins().length} plugins successfully.`);
 		this.registerModelListeners();
 		this.registerTerminalListeners();
 		this.registerCollaborationListeners();
@@ -480,7 +481,7 @@ Respond directly, concisely, and provide code blocks where necessary. Keep it co
 
 		let terminal = this.sandboxTerminal;
 		if (!terminal || terminal.isDisposed) {
-			terminal = await this.terminalService.createTerminal({ title: 'Kyvora Sandbox' });
+			terminal = await this.terminalService.createTerminal({ name: 'Kyvora Sandbox' } as any);
 			this.sandboxTerminal = terminal;
 			this._register(terminal.onLineData(line => {
 				if (this.sandboxActive) {
