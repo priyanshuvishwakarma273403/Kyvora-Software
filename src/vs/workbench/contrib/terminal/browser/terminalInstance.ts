@@ -93,6 +93,7 @@ import type { IProgressState } from '@xterm/addon-progress';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { PromptInputState } from '../../../../platform/terminal/common/capabilities/commandDetection/promptInputModel.js';
 import { hasKey, isNumber, isString } from '../../../../base/common/types.js';
+import { getWelcomeScreenText } from '../../kyvoraAdvanced/browser/kyvoraTerminalWelcome.js';
 
 const enum Constants {
 	/**
@@ -373,6 +374,11 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 
 	readonly sessionId = generateUuid();
 
+	private _welcomeScreenPrinted = false;
+	private _welcomeDataPromise!: Promise<void>;
+	private _gitBranch = 'main';
+	private _javaVer = 'N/A';
+
 	constructor(
 		private readonly _terminalShellTypeContextKey: IContextKey<string>,
 		private _shellLaunchConfig: IShellLaunchConfig,
@@ -406,6 +412,8 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 		@IViewDescriptorService private readonly _viewDescriptorService: IViewDescriptorService,
 	) {
 		super();
+
+		this._welcomeDataPromise = this._queryGitBranchAndJava();
 
 		this._wrapperElement = document.createElement('div');
 		this._wrapperElement.classList.add('terminal-wrapper');
