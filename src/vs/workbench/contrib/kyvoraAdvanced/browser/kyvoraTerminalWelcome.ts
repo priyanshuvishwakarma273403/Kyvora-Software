@@ -20,7 +20,7 @@ const THEMES: Record<string, WelcomeTheme> = {
 	default: {
 		id: 'default',
 		name: 'Kyvora Purple & Gold',
-		eagleColor: '\x1b[38;5;220m', // Gold
+		eagleColor: '\x1b[38;5;248m', // Soft White/Gray
 		logoColor: '\x1b[38;5;99m',  // Violet/Purple
 		panelColor: '\x1b[38;5;105m', // Lavender
 		accentColor: '\x1b[38;5;208m', // Orange
@@ -64,32 +64,17 @@ const THEMES: Record<string, WelcomeTheme> = {
 	}
 };
 
-const EAGLE_ASCII = `                              ___,--------,____
-                      __--~~~~                 ~~---,_
-                   ,-'                  __,--,_       \`\\,___,-,__
-                ,-'                 __/'/-~~~\\  \`  \` . '    , |  \`~~\\
-             _/\`      _/~~      '~~   \\,_\\_ O /        '  '~_/'      \`\\
-           /'        '                   =-'~~  _  /  ~   /'          \`\\
-        _/'  /~                            ,--,____,-----|,_,-,_       \`\\
-    _,/'    '              ,-'      _      \`~'------'~~~~~--    \`~~~~\\  |
- ,-'             /~       '    ,-~~~         _,       ,-=~~~~~~~~~~~~'| |
-~              .'             '         ,   '      /~\`                |/
-                                  /' ,/'       _/~\`
-                   ,       /    /\`          _/~
-        /~        /      /\`               /'
-      .'                                /'
-                       /'      .      /
-                      \`       /'     |
-                                    '`;
+const EAGLE_ASCII = `         ____,-----____
+     _--~              ~~--_
+   ,-'          __,--_      \`\\
+  /         __/'/-~~\\ \\       \\
+ /  /~~   ~~  \\,_\\_ O /       /
+/ '              =-'~~       /
+\\__                          |
+   \`~~'------'~~~~~--     _,-'\``;
 
-const LOGO_ASCII = `
- ██╗  ██╗██╗   ██╗██╗   ██╗ ██████╗ ██████╗  █████╗ 
- ██║ ██╔╝╚██╗ ██╔╝██║   ██║██╔═══██╗██╔══██╗██╔══██╗
- █████╔╝  ╚████╔╝ ██║   ██║██║   ██║██████╔╝███████║
- ██╔═██╗   ╚██╔╝  ╚██╗ ██╔╝██║   ██║██╔══██╗██╔══██║
- ██║  ██╗   ██║    ╚████╔╝ ╚██████╔╝██║  ██║██║  ██║
- ╚═╝  ╚═╝   ╚═╝     ╚═══╝   ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
-`;
+const LOGO_ASCII = ` █▄▀ █ █ █ █ █▀█ █▀▄ █▀█
+ █ █ ╚█╝ ╚▄╝ █▄█ █ █ █▀█`;
 
 export function getWelcomeScreenText(options: {
 	workspaceName: string;
@@ -140,30 +125,20 @@ export function getWelcomeScreenText(options: {
 	const lines: string[] = [];
 	lines.push('');
 
-	// Center Eagle as a block
-	lines.push(...centerBlock(EAGLE_ASCII, cols, ec, rst));
+	// Left align Eagle as a block
+	lines.push(...leftAlignBlock(EAGLE_ASCII, ec, rst, 4));
 	lines.push('');
 
-	// Center KYVORA Logo as a block
-	lines.push(...centerBlock(LOGO_ASCII, cols, lc, rst));
+	// Left align KYVORA Logo as a block
+	lines.push(...leftAlignBlock(LOGO_ASCII, lc, rst, 4));
 	lines.push('');
 
 	return lines.join('\r\n');
 }
 
-function centerBlock(art: string, cols: number, colorPrefix: string, colorSuffix: string): string[] {
+function leftAlignBlock(art: string, colorPrefix: string, colorSuffix: string, leftMargin: number = 4): string[] {
 	const lines = art.split('\n');
-	let maxLen = 0;
-	lines.forEach(line => {
-		const clean = line.replace(/\x1b\[[0-9;]*m/g, '');
-		if (clean.length > maxLen) {
-			maxLen = clean.length;
-		}
-	});
-
-	const paddingAmount = Math.max(0, Math.floor((cols - maxLen) / 2));
-	const padding = ' '.repeat(paddingAmount);
-
+	const padding = ' '.repeat(leftMargin);
 	return lines.map(line => {
 		if (!line.trim()) {
 			return '';
