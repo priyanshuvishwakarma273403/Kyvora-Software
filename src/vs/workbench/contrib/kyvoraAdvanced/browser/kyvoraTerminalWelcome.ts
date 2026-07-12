@@ -64,28 +64,6 @@ const THEMES: Record<string, WelcomeTheme> = {
 	}
 };
 
-const MOTD_LIST = [
-	"The only way to do great work is to love what you do. -- Steve Jobs",
-	"Design is not just what it looks like and feels like. Design is how it works. -- Steve Jobs",
-	"Simplicity is the ultimate sophistication. -- Leonardo da Vinci",
-	"Make it simple, but significant. -- Don Draper",
-	"Empowering your development with autonomous AI Swarms.",
-	"Synthesizing next-gen developer workflows in real-time.",
-	"Zero latency, infinite context, autonomous engineering.",
-	"Collaborate in real-time with AI multiplayer developer swarms.",
-	"AST-guided next-edit completion active and ready."
-];
-
-const TIPS_LIST = [
-	"Use Ctrl + Shift + P to open the command palette and boost your productivity with Kyvora.",
-	"Set 'kyvora.ai.model' in settings to choose your favorite LLM (local or cloud).",
-	"Use Alt + Right Click in the editor to trigger a deep AI refactoring loop.",
-	"Open the 'Features' page in the navbar to explore comparison tables and FAQs.",
-	"Check the 'Security Activity' view to verify sandbox access logs.",
-	"Run 'kyvora.runAutonomousSandbox' in the console to auto-test and patch errors.",
-	"Hover over items in the status bar to view current plugin diagnostics."
-];
-
 const EAGLE_ASCII = `                              ___,--------,____
                       __--~~~~                 ~~---,_
                    ,-'                  __,--,_       \`\\,___,-,__
