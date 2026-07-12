@@ -89,7 +89,6 @@ export function getWelcomeScreenText(options: {
 	configurationService: IConfigurationService;
 	cols: number;
 }): string {
-	const cols = options.cols || 80;
 
 	// Select Theme based on user setting
 	const isLightTheme = options.themeService.getColorTheme().type === 'light';
