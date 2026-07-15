@@ -1711,13 +1711,14 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 					this._writeProcessData(welcomeText + '\r\n');
 					this._welcomeScreenPrinted = true;
 
-					// Continue with the remaining buffered process data, stripping clear/reset codes
+					// Continue with the remaining buffered process data, stripping clear/reset/cursor-home codes
 					for (const bufferedEv of this._earlyProcessDataBuffer) {
 						const cleanedData = bufferedEv.data
 							.replace(/\x1bc/g, '')
 							.replace(/\x1b\[2J/g, '')
 							.replace(/\x1b\[H\x1b\[2J/g, '')
-							.replace(/\x1b\[H\x1b\[J/g, '');
+							.replace(/\x1b\[H\x1b\[J/g, '')
+							.replace(/\x1b\[(?:\d*;\d*)?[Hf]/g, '');
 						this._continueOnProcessData({ ...bufferedEv, data: cleanedData });
 					}
 					this._earlyProcessDataBuffer = [];
