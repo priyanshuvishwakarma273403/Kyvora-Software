@@ -355,12 +355,18 @@ Please describe your thoughts first (without using emojis), then provide the fil
 
 			const threadId = this.activeThreadId || ('thread_' + Date.now());
 
+			const headers: Record<string, string> = {
+				'Content-Type': 'application/json'
+			};
+			const token = this.collabService.getJwtToken();
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+
 			const context = await this.requestService.request({
 				type: 'POST',
 				url: apiUrl,
-				headers: {
-					'Content-Type': 'application/json'
-				},
+				headers: headers,
 				data: JSON.stringify({
 					threadId: threadId,
 					approved: approved,
@@ -669,6 +675,29 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			background: var(--bg-hover);
 			border: 1px solid var(--border-subtle);
 			color: var(--text-primary);
+		}
+
+		.btn-social {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			color: var(--text-primary);
+			padding: 8px 12px;
+			border-radius: 6px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: all 0.2s;
+			font-size: 12px;
+			width: 100%;
+			margin-top: 8px;
+		}
+
+		.btn-social:hover {
+			border-color: var(--accent-primary);
+			background: var(--bg-hover);
 		}
 
 		.btn-danger {
