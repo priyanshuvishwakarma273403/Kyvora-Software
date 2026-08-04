@@ -621,10 +621,19 @@ function prepareCopilotRipgrepShimTask(platform: string, arch: string, destinati
 		const appBase = platform === 'darwin'
 			? path.join(outputDir, `${product.nameLong}.app`, 'Contents', 'Resources', 'app')
 			: path.join(outputDir, versionedResourcesFolder, 'resources', 'app');
-		const appNodeModulesDir = path.join(appBase, 'node_modules');
 
 		const builtInCopilotExtensionDir = path.join(appBase, 'extensions', 'copilot');
-		prepareBuiltInCopilotRipgrepShim(platform, arch, builtInCopilotExtensionDir, appNodeModulesDir);
+		if (!fs.existsSync(builtInCopilotExtensionDir)) {
+			console.log(`[prepareCopilotRipgrepShimTask] Copilot extension not found at ${builtInCopilotExtensionDir}, skipping shim preparation.`);
+			return;
+		}
+
+		const appNodeModulesDir = path.join(appBase, 'node_modules');
+		try {
+			prepareBuiltInCopilotRipgrepShim(platform, arch, builtInCopilotExtensionDir, appNodeModulesDir);
+		} catch (err) {
+			console.warn(`Warning: prepareBuiltInCopilotRipgrepShim failed:`, err);
+		}
 	};
 }
 
