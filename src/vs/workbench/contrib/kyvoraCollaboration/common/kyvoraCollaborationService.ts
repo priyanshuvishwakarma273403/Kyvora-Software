@@ -26,6 +26,7 @@ export interface IKyvoraCollaborationService {
 	getUsername(): string;
 	getSessionId(): string | null;
 	getSecretToken(): string | null;
+	getJwtToken(): string | null;
 	getParticipants(): any[];
 	getMessages(): any[];
 	getActivities(): any[];
@@ -34,6 +35,8 @@ export interface IKyvoraCollaborationService {
 
 	login(username: string, password: string): Promise<boolean>;
 	signup(username: string, email: string, password: string): Promise<boolean>;
+	loginWithGoogle(email: string): Promise<boolean>;
+	loginWithGithub(email: string): Promise<boolean>;
 	logout(): void;
 
 	createSession(title: string): Promise<any>;
@@ -226,6 +229,10 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 
 	getSecretToken(): string | null {
 		return this.secretToken;
+	}
+
+	getJwtToken(): string | null {
+		return this.token;
 	}
 
 	getParticipants(): any[] {
