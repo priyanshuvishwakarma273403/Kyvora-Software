@@ -170,6 +170,74 @@ export class KyvoraCollaborationService extends Disposable implements IKyvoraCol
 		}
 	}
 
+	async loginWithGoogle(email: string): Promise<boolean> {
+		try {
+			const devToken = `dev-token-for-${email}`;
+			const context = await this.requestService.request({
+				type: 'POST',
+				url: `${this.baseUrl}/auth/google`,
+				headers: { 
+					'Content-Type': 'application/json',
+					'X-Client-Type': 'vscode'
+				},
+				data: JSON.stringify({ idToken: devToken }),
+				callSite: 'kyvoraCollaborationService'
+			}, CancellationToken.None);
+
+			if (context.res.statusCode !== 200) {
+				return false;
+			}
+
+			const data = await asJson<any>(context);
+			if (data && data.token) {
+				this.token = data.token;
+				this.username = data.username || email.split('@')[0];
+				this.storageService.store('kyvora.collaboration.token', data.token, StorageScope.APPLICATION, StorageTarget.MACHINE);
+				this.storageService.store('kyvora.collaboration.username', this.username, StorageScope.APPLICATION, StorageTarget.MACHINE);
+				this._onDidSessionChange.fire(null);
+				return true;
+			}
+			return false;
+		} catch (e) {
+			console.error('Google login error:', e);
+			return false;
+		}
+	}
+
+	async loginWithGithub(email: string): Promise<boolean> {
+		try {
+			const devToken = `dev-token-for-${email}`;
+			const context = await this.requestService.request({
+				type: 'POST',
+				url: `${this.baseUrl}/auth/github`,
+				headers: { 
+					'Content-Type': 'application/json',
+					'X-Client-Type': 'vscode'
+				},
+				data: JSON.stringify({ code: devToken }),
+				callSite: 'kyvoraCollaborationService'
+			}, CancellationToken.None);
+
+			if (context.res.statusCode !== 200) {
+				return false;
+			}
+
+			const data = await asJson<any>(context);
+			if (data && data.token) {
+				this.token = data.token;
+				this.username = data.username || email.split('@')[0];
+				this.storageService.store('kyvora.collaboration.token', data.token, StorageScope.APPLICATION, StorageTarget.MACHINE);
+				this.storageService.store('kyvora.collaboration.username', this.username, StorageScope.APPLICATION, StorageTarget.MACHINE);
+				this._onDidSessionChange.fire(null);
+				return true;
+			}
+			return false;
+		} catch (e) {
+			console.error('Github login error:', e);
+			return false;
+		}
+	}
+
 	logout(): void {
 		this.leaveSession();
 		this.token = null;

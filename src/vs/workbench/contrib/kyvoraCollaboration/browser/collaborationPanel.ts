@@ -112,6 +112,16 @@ export class CollaborationPanel extends Disposable {
 				this._webview?.postMessage({ type: 'loginResult', success: loginSuccess });
 				this.syncState();
 				break;
+			case 'loginGoogle':
+				const googleSuccess = await this.collabService.loginWithGoogle(message.email);
+				this._webview?.postMessage({ type: 'loginResult', success: googleSuccess });
+				this.syncState();
+				break;
+			case 'loginGithub':
+				const githubSuccess = await this.collabService.loginWithGithub(message.email);
+				this._webview?.postMessage({ type: 'loginResult', success: githubSuccess });
+				this.syncState();
+				break;
 			case 'signup':
 				const signupSuccess = await this.collabService.signup(message.username, message.email, message.password);
 				this._webview?.postMessage({ type: 'signupResult', success: signupSuccess });
@@ -239,12 +249,18 @@ Please describe your thoughts first (without using emojis), then provide the fil
 				};
 			}
 
+			const headers: Record<string, string> = {
+				'Content-Type': 'application/json'
+			};
+			const token = this.collabService.getJwtToken();
+			if (token) {
+				headers['Authorization'] = `Bearer ${token}`;
+			}
+
 			const context = await this.requestService.request({
 				type: 'POST',
 				url: apiUrl,
-				headers: {
-					'Content-Type': 'application/json'
-				},
+				headers: headers,
 				data: JSON.stringify(payload),
 				callSite: 'kyvoraAiQuery'
 			}, CancellationToken.None);
