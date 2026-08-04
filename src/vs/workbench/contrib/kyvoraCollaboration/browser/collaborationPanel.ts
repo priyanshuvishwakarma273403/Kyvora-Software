@@ -15,6 +15,7 @@ export class CollaborationPanel extends Disposable {
 	public static readonly VIEW_ID = 'kyvora.collaborationView';
 
 	private _webview: { postMessage(message: any): void } | null = null;
+	private activeThreadId: string | null = null;
 
 	constructor(
 		@IKyvoraCollaborationService private readonly collabService: IKyvoraCollaborationService,
@@ -153,38 +154,63 @@ export class CollaborationPanel extends Disposable {
 				this.syncState();
 				break;
 			case 'askAi':
-				await this.handleAiQuery(message.text);
+				await this.handleAiQuery(message.text, message.mode, message.agentId, message.provider, message.model);
+				break;
+			case 'resumeAiGraph':
+				await this.handleResumeAiGraph(message.approved, message.feedback, message.provider, message.model);
 				break;
 		}
 	}
 
-	private async handleAiQuery(text: string): Promise<void> {
+	private async handleAiQuery(text: string, mode: string, agentId: string, provider: string, model: string): Promise<void> {
 		try {
 			this.postProgressUpdate('Analyzing your request...');
 
 			const serverUrl = this.configurationService.getValue<string>('kyvora.collaboration.serverUrl') || 'http://localhost:8080';
 			const cleanUrl = serverUrl.replace(/\/$/, '');
-			const apiUrl = `${cleanUrl}/api/v1/ai/completion`;
 
-			const workspaceFolders = this.workspaceContextService.getWorkspace().folders;
-			const rootFolder = workspaceFolders[0];
-			let workspaceInfo = 'No folder open.';
-			if (rootFolder) {
-				workspaceInfo = `Workspace Root: ${rootFolder.uri.fsPath}\n`;
-				try {
-					const children = await this.fileService.resolve(rootFolder.uri);
-					if (children && children.children) {
-						workspaceInfo += 'Files in workspace root:\n';
-						for (const child of children.children) {
-							workspaceInfo += ` - ${child.name} (${child.isDirectory ? 'directory' : 'file'})\n`;
+			let apiUrl = '';
+			let payload: any = {};
+			const threadId = 'thread_' + Date.now();
+
+			if (mode === 'agent') {
+				apiUrl = `${cleanUrl}/api/v1/ai/agent/run`;
+				payload = {
+					agentId: agentId || 'coding',
+					prompt: text,
+					provider: provider || 'gemini',
+					model: model || 'gemini-1.5-pro',
+					files: []
+				};
+			} else if (mode === 'graph') {
+				this.activeThreadId = threadId;
+				apiUrl = `${cleanUrl}/api/v1/ai/agent/graph/run`;
+				payload = {
+					threadId: threadId,
+					prompt: text,
+					provider: provider || 'gemini',
+					model: model || 'gemini-1.5-pro'
+				};
+			} else {
+				// Default chat
+				apiUrl = `${cleanUrl}/api/v1/ai/completion`;
+				
+				const workspaceFolders = this.workspaceContextService.getWorkspace().folders;
+				const rootFolder = workspaceFolders[0];
+				let workspaceInfo = 'No folder open.';
+				if (rootFolder) {
+					workspaceInfo = `Workspace Root: ${rootFolder.uri.fsPath}\n`;
+					try {
+						const children = await this.fileService.resolve(rootFolder.uri);
+						if (children && children.children) {
+							workspaceInfo += 'Files in workspace root:\n';
+							for (const child of children.children) {
+								workspaceInfo += ` - ${child.name} (${child.isDirectory ? 'directory' : 'file'})\n`;
+							}
 						}
-					}
-				} catch (e) {
-					// ignore
+					} catch (e) { }
 				}
-			}
-
-			const systemPrompt = `You are Kyvora AI, a highly advanced agentic coding assistant integrated in Kyvora Studio.
+				const systemPrompt = `You are Kyvora AI, a highly advanced agentic coding assistant integrated in Kyvora Studio.
 You must help the developer by writing complete, high-quality code and making filesystem edits.
 IMPORTANT: You MUST NOT use any emojis in your response. Not a single emoji is allowed.
 
@@ -206,7 +232,12 @@ complete new content here
 Always specify paths relative to the workspace root.
 Please describe your thoughts first (without using emojis), then provide the file actions, and finally summarize what you did. Keep your response clean, professional, and precise.`;
 
-			const prompt = `${systemPrompt}\n\nUser Question:\n${text}`;
+				payload = {
+					provider: provider || 'gemini',
+					model: model || 'gemini-1.5-pro',
+					prompt: `${systemPrompt}\n\nUser Question:\n${text}`
+				};
+			}
 
 			const context = await this.requestService.request({
 				type: 'POST',
@@ -214,11 +245,7 @@ Please describe your thoughts first (without using emojis), then provide the fil
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				data: JSON.stringify({
-					provider: 'gemini',
-					model: 'gemini-1.5-pro',
-					prompt: prompt
-				}),
+				data: JSON.stringify(payload),
 				callSite: 'kyvoraAiQuery'
 			}, CancellationToken.None);
 
@@ -229,14 +256,140 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			}
 
 			const data = await asJson<any>(context);
-			const responseText = data?.text || 'No response from AI.';
 
-			await this.processFileActions(responseText);
-			this.postAiResponse(responseText);
+			if (mode === 'agent') {
+				const finalResponse = data?.finalResponse || 'No response from Agent.';
+				const steps = data?.steps || [];
+				let formattedResponse = `🤖 **Agent Status: ${data?.status || 'COMPLETED'}**\n\n`;
+				
+				if (steps.length > 0) {
+					formattedResponse += `**Execution Trace:**\n`;
+					for (const step of steps) {
+						formattedResponse += `* *Thought:* ${step.thought || 'None'}\n`;
+						if (step.toolCalled && step.toolCalled !== 'None') {
+							formattedResponse += `  *Called Tool:* \`${step.toolCalled}\` with args \`${JSON.stringify(step.arguments)}\`\n`;
+						}
+					}
+					formattedResponse += `\n`;
+				}
+				
+				formattedResponse += `**Final Answer:**\n${finalResponse}`;
+				await this.processFileActions(finalResponse);
+				this.postAiResponse(formattedResponse);
+
+			} else if (mode === 'graph') {
+				const thread = data?.threadId || threadId;
+				const checkpoint = data?.checkpointId || '';
+				const history = data?.executionHistory || [];
+				const plan = data?.planSteps || [];
+				
+				let formattedResponse = `⛓️ **LangGraph Agent Loop initiated** (Thread: \`${thread}\`)\n\n`;
+				
+				if (plan.length > 0) {
+					formattedResponse += `**Execution Plan Milestones:**\n`;
+					for (let i = 0; i < plan.length; i++) {
+						const isCurrent = i === (data?.currentStepIndex || 0);
+						formattedResponse += `${isCurrent ? '👉' : '◽'} ${plan[i]}\n`;
+					}
+					formattedResponse += `\n`;
+				}
+
+				if (history.length > 0) {
+					formattedResponse += `**Running Milestones Execution:**\n`;
+					for (const step of history) {
+						formattedResponse += `* **[${step.agentId || 'agent'}]**: ${step.thought || ''}\n`;
+						if (step.toolCalled && step.toolCalled !== 'None') {
+							formattedResponse += `  *Tool:* \`${step.toolCalled}\` -> Output size: ${step.toolOutput ? step.toolOutput.length : 0} chars\n`;
+						}
+					}
+					formattedResponse += `\n`;
+				}
+
+				if (checkpoint === 'awaiting_approval') {
+					formattedResponse += `⚠️ **Awaiting Human Checkpoint Gate approval to deploy changes.**\n`;
+					this._webview?.postMessage({
+						type: 'showApprovalGate',
+						threadId: thread
+					});
+				} else {
+					formattedResponse += `✨ **Cycle Completed**\n`;
+				}
+
+				this.postAiResponse(formattedResponse);
+
+			} else {
+				const responseText = data?.text || 'No response from AI.';
+				await this.processFileActions(responseText);
+				this.postAiResponse(responseText);
+			}
 
 		} catch (e: any) {
 			console.error('AI Query error:', e);
 			this.postAiResponse(`Error: ${e.message || e}`);
+		}
+	}
+
+	private async handleResumeAiGraph(approved: boolean, feedback: string, provider: string, model: string): Promise<void> {
+		try {
+			this.postProgressUpdate('Sending response to LangGraph...');
+
+			const serverUrl = this.configurationService.getValue<string>('kyvora.collaboration.serverUrl') || 'http://localhost:8080';
+			const cleanUrl = serverUrl.replace(/\/$/, '');
+			const apiUrl = `${cleanUrl}/api/v1/ai/agent/graph/resume`;
+
+			const threadId = this.activeThreadId || ('thread_' + Date.now());
+
+			const context = await this.requestService.request({
+				type: 'POST',
+				url: apiUrl,
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				data: JSON.stringify({
+					threadId: threadId,
+					approved: approved,
+					feedback: feedback,
+					provider: provider || 'gemini',
+					model: model || 'gemini-1.5-pro'
+				}),
+				callSite: 'kyvoraAiResume'
+			}, CancellationToken.None);
+
+			if (context.res.statusCode !== 200) {
+				const errMsg = `Server returned status code ${context.res.statusCode}`;
+				this.postAiResponse(`Sorry, I encountered an error communicating with the Kyvora AI backend: ${errMsg}`);
+				return;
+			}
+
+			const data = await asJson<any>(context);
+			const history = data?.executionHistory || [];
+			const checkpoint = data?.checkpointId || '';
+
+			let formattedResponse = `🔄 **LangGraph resumed** (Approved: ${approved})\n\n`;
+
+			if (history.length > 0) {
+				formattedResponse += `**Updated Execution Trace:**\n`;
+				for (const step of history) {
+					formattedResponse += `* **[${step.agentId || 'agent'}]**: ${step.thought || ''}\n`;
+				}
+				formattedResponse += `\n`;
+			}
+
+			if (checkpoint === 'awaiting_approval') {
+				formattedResponse += `⚠️ **Awaiting Human Checkpoint Gate approval to deploy changes.**\n`;
+				this._webview?.postMessage({
+					type: 'showApprovalGate',
+					threadId: data?.threadId || threadId
+				});
+			} else {
+				formattedResponse += `🎉 **LangGraph Loop completed successfully!**\n`;
+			}
+
+			this.postAiResponse(formattedResponse);
+
+		} catch (e: any) {
+			console.error('AI Resume error:', e);
+			this.postAiResponse(`Error resuming graph: ${e.message || e}`);
 		}
 	}
 
@@ -675,12 +828,13 @@ Please describe your thoughts first (without using emojis), then provide the fil
 		.auth-container {
 			display: flex;
 			flex-direction: column;
-			justify-content: center;
+			justify-content: flex-start;
 			align-items: center;
-			height: 100vh;
-			width: 100vw;
-			padding: 24px;
+			height: 100%;
+			width: 100%;
+			padding: 16px;
 			background: var(--bg-deepest);
+			overflow-y: auto;
 		}
 
 		.auth-card {
@@ -732,6 +886,120 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			background-color: rgba(239, 68, 68, 0.15);
 			border: 1px solid var(--red);
 			color: #f87171;
+		}
+
+		/* AI Config Panel */
+		.ai-config-bar {
+			background: var(--bg-card);
+			border: 1px solid var(--border-subtle);
+			border-radius: 6px;
+			padding: 8px 12px;
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			margin-bottom: 8px;
+			width: 100%;
+		}
+		.ai-config-row {
+			display: flex;
+			gap: 8px;
+			width: 100%;
+		}
+		.ai-config-item {
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+		.ai-config-item label {
+			font-size: 9px;
+			text-transform: uppercase;
+			color: var(--text-secondary);
+			font-weight: 600;
+		}
+		.ai-config-item select {
+			background: var(--bg-panel);
+			border: 1px solid var(--border-subtle);
+			color: var(--text-primary);
+			padding: 4px 6px;
+			border-radius: 4px;
+			font-size: 11px;
+			outline: none;
+		}
+		.ai-config-item select:focus {
+			border-color: var(--accent-primary);
+		}
+
+		/* Approval Gate Overlay */
+		.approval-overlay {
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: rgba(7, 7, 9, 0.85);
+			backdrop-filter: blur(8px);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			padding: 16px;
+			z-index: 100;
+			animation: fadeIn 0.3s ease;
+		}
+		.approval-card {
+			background: var(--bg-card);
+			border: 1px solid var(--border-accent);
+			border-radius: 12px;
+			padding: 18px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			gap: 12px;
+			width: 100%;
+			box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+		}
+		.approval-icon {
+			color: var(--orange);
+			background: rgba(245, 158, 11, 0.1);
+			padding: 10px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.approval-title {
+			font-size: 13px;
+			font-weight: 700;
+			color: var(--accent-bright);
+		}
+		.approval-desc {
+			font-size: 11px;
+			color: var(--text-secondary);
+			text-align: center;
+			line-height: 1.4;
+		}
+		.approval-card textarea {
+			background: var(--bg-panel);
+			border: 1px solid var(--border-subtle);
+			color: var(--text-primary);
+			padding: 6px 10px;
+			border-radius: 6px;
+			font-size: 11px;
+			width: 100%;
+			height: 60px;
+			resize: none;
+			outline: none;
+		}
+		.approval-card textarea:focus {
+			border-color: var(--accent-primary);
+		}
+		.approval-actions {
+			display: flex;
+			gap: 8px;
+			width: 100%;
+		}
+		.approval-actions button {
+			flex: 1;
 		}
 
 		@keyframes fadeIn {
@@ -791,7 +1059,7 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			</div>
 			<div class="profile-section">
 				<span id="headerUsername" class="username-label"></span>
-				<button class="btn-logout" onclick="logout()">Sign Out</button>
+				<button class="btn-logout" onclick="triggerLogout()">Sign Out</button>
 			</div>
 		</div>
 
@@ -803,7 +1071,7 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			<button class="tab-btn" onclick="switchTab('activity')">Activity</button>
 		</div>
 
-		<div class="panel-content">
+		<div class="panel-content" style="position: relative; height: calc(100% - 90px); display: flex; flex-direction: column;">
 			<!-- Sessions Tab -->
 			<div id="sessions-tab" class="tab-panel active">
 				<div id="no-session-view" class="card">
@@ -876,20 +1144,95 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			</div>
 
 			<!-- Kyvora AI Tab -->
-			<div id="ai-tab" class="tab-panel chat-container">
-				<div class="chat-messages" id="aiMessages">
+			<div id="ai-tab" class="tab-panel chat-container" style="position: relative; height: 100%;">
+				<div class="ai-config-bar">
+					<div class="ai-config-row">
+						<div class="ai-config-item">
+							<label>Mode</label>
+							<select id="aiMode" onchange="toggleAiModeFields()">
+								<option value="chat">Direct Chat</option>
+								<option value="agent">Single Agent</option>
+								<option value="graph">LangGraph Loop</option>
+							</select>
+						</div>
+						<div class="ai-config-item" id="aiAgentGroup" style="display: none;">
+							<label>Agent</label>
+							<select id="aiAgent">
+								<option value="planner">Planner</option>
+								<option value="research">Researcher</option>
+								<option value="context">Context</option>
+								<option value="memory">Memory</option>
+								<option value="file">File</option>
+								<option value="coding" selected>Coding</option>
+								<option value="refactor">Refactor</option>
+								<option value="debug">Debugger</option>
+								<option value="testing">Testing</option>
+							</select>
+						</div>
+					</div>
+					<div class="ai-config-row">
+						<div class="ai-config-item">
+							<label>LLM Provider</label>
+							<select id="aiProvider">
+								<option value="gemini">Gemini</option>
+								<option value="groq">Groq</option>
+								<option value="openrouter">OpenRouter</option>
+								<option value="huggingface">HuggingFace</option>
+								<option value="sambanova">SambaNova</option>
+							</select>
+						</div>
+						<div class="ai-config-item">
+							<label>Model</label>
+							<select id="aiModel">
+								<option value="gemini-1.5-pro">gemini-1.5-pro</option>
+								<option value="gemini-1.5-flash">gemini-1.5-flash</option>
+								<option value="llama-3.1-70b">llama-3.1-70b</option>
+								<option value="claude-3-5-sonnet">claude-3-5-sonnet</option>
+							</select>
+						</div>
+					</div>
+				</div>
+
+				<div class="chat-messages" id="aiMessages" style="flex: 1; max-height: calc(100vh - 350px);">
 					<div class="chat-bubble assistant">
 						<div class="chat-sender">Kyvora AI</div>
 						<div class="chat-text">Hello! I am Kyvora AI, your autonomous programming assistant. I can write code, create files, and fix errors in your workspace. How can I help you today?</div>
 					</div>
 				</div>
+
 				<div id="aiProgress" style="display: none; padding: 8px; color: var(--accent-bright); font-size: 11px; text-align: center;">
 					<span class="spinner" style="display: inline-block; width: 12px; height: 12px; border: 2px solid var(--accent-primary); border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-right: 6px; vertical-align: middle;"></span>
 					<span id="aiProgressText">Processing request...</span>
 				</div>
+
 				<div class="chat-input-container">
-					<input type="text" id="aiInput" class="chat-input" placeholder="Ask Kyvora AI to write code or create files..." onkeydown="if(event.key === 'Enter') sendAiMessage()" />
+					<input type="text" id="aiInput" class="chat-input" placeholder="Ask Kyvora AI..." onkeydown="if(event.key === 'Enter') sendAiMessage()" />
 					<button class="btn" onclick="sendAiMessage()">Ask</button>
+				</div>
+
+				<!-- Human Approval Gate Overlay -->
+				<div id="approvalOverlay" class="approval-overlay" style="display: none;">
+					<div class="approval-card">
+						<div class="approval-icon">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+								<line x1="12" y1="9" x2="12" y2="13"/>
+								<line x1="12" y1="17" x2="12.01" y2="17"/>
+							</svg>
+						</div>
+						<div class="approval-title">Human Checkpoint Reached</div>
+						<div class="approval-desc">The LangGraph loop is paused. Review the proposed modifications and choose whether to proceed or request a rework.</div>
+						
+						<div class="input-group" style="width: 100%;">
+							<label>Rework Feedback (Optional)</label>
+							<textarea id="approvalFeedback" placeholder="What should the agent change? e.g. Add unit test assertions..."></textarea>
+						</div>
+						
+						<div class="approval-actions">
+							<button class="btn btn-secondary" onclick="respondToApproval(false)">Rework</button>
+							<button class="btn" style="background: linear-gradient(135deg, #10B981, #059669);" onclick="respondToApproval(true)">Approve & Deploy</button>
+						</div>
+					</div>
 				</div>
 			</div>
 
@@ -991,8 +1334,36 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			vscode.postMessage({ command: 'signup', username: u, email: e, password: p });
 		}
 
-		function logout() {
+		function triggerLogout() {
 			vscode.postMessage({ command: 'logout' });
+		}
+
+		function toggleAiModeFields() {
+			const mode = document.getElementById('aiMode').value;
+			document.getElementById('aiAgentGroup').style.display = (mode === 'agent') ? 'flex' : 'none';
+		}
+
+		function respondToApproval(approved) {
+			const feedback = document.getElementById('approvalFeedback').value.trim();
+			submitApproval(approved, feedback);
+			document.getElementById('approvalFeedback').value = '';
+		}
+
+		function submitApproval(approved, feedback) {
+			document.getElementById('approvalOverlay').style.display = 'none';
+			document.getElementById('aiProgress').style.display = 'block';
+			document.getElementById('aiProgressText').textContent = approved ? 'Deploying changes...' : 'Routing feedback...';
+
+			const provider = document.getElementById('aiProvider').value;
+			const model = document.getElementById('aiModel').value;
+
+			vscode.postMessage({
+				command: 'resumeAiGraph',
+				approved: approved,
+				feedback: feedback,
+				provider: provider,
+				model: model
+			});
 		}
 
 		window.addEventListener('message', event => {
@@ -1038,6 +1409,10 @@ Please describe your thoughts first (without using emojis), then provide the fil
 					break;
 				case 'aiProgressUpdate':
 					document.getElementById('aiProgressText').textContent = msg.text;
+					break;
+				case 'showApprovalGate':
+					document.getElementById('approvalOverlay').style.display = 'flex';
+					state.activeThreadId = msg.threadId;
 					break;
 				case 'sessionError':
 					showMainAlert(msg.message, false);
@@ -1159,6 +1534,7 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			vscode.postMessage({ command: 'sendChatMessage', text });
 		}
 
+		// Renders live chat messages
 		function renderMessages() {
 			const list = document.getElementById('chatMessages');
 			list.innerHTML = '';
@@ -1269,7 +1645,19 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			document.getElementById('aiProgress').style.display = 'block';
 			document.getElementById('aiProgressText').textContent = 'Analyzing request...';
 
-			vscode.postMessage({ command: 'askAi', text: text });
+			const mode = document.getElementById('aiMode').value;
+			const agentId = document.getElementById('aiAgent').value;
+			const provider = document.getElementById('aiProvider').value;
+			const model = document.getElementById('aiModel').value;
+
+			vscode.postMessage({ 
+				command: 'askAi', 
+				text: text, 
+				mode: mode, 
+				agentId: agentId, 
+				provider: provider, 
+				model: model 
+			});
 		}
 
 		function renderAiMessage(sender, text, isSelf) {
