@@ -331,6 +331,7 @@ Please describe your thoughts first (without using emojis), then provide the fil
 					formattedResponse += `✨ **Cycle Completed**\n`;
 				}
 
+				await this.processWorkspaceFiles(data?.workspaceFiles);
 				this.postAiResponse(formattedResponse);
 
 			} else {
@@ -407,6 +408,7 @@ Please describe your thoughts first (without using emojis), then provide the fil
 				formattedResponse += `🎉 **LangGraph Loop completed successfully!**\n`;
 			}
 
+			await this.processWorkspaceFiles(data?.workspaceFiles);
 			this.postAiResponse(formattedResponse);
 
 		} catch (e: any) {
@@ -427,6 +429,42 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			type: 'aiResponse',
 			text
 		});
+	}
+	private async processWorkspaceFiles(workspaceFiles: Record<string, any>): Promise<void> {
+		if (!workspaceFiles) {
+			return;
+		}
+		const workspaceFolders = this.workspaceContextService.getWorkspace().folders;
+		const rootFolder = workspaceFolders[0];
+		if (!rootFolder) {
+			return;
+		}
+
+		for (const key of Object.keys(workspaceFiles)) {
+			const fileInfo = workspaceFiles[key];
+			const relPath = fileInfo.path || key;
+			const content = fileInfo.content;
+			if (content === undefined || content === null) {
+				continue;
+			}
+			this.postProgressUpdate(`Updating workspace file: ${relPath}`);
+			try {
+				const fileUri = URI.joinPath(rootFolder.uri, relPath);
+				let exists = false;
+				try {
+					exists = await this.fileService.exists(fileUri);
+				} catch (err) {}
+
+				if (!exists) {
+					await this.fileService.createFile(fileUri, VSBuffer.fromString(content), { overwrite: true });
+				} else {
+					await this.fileService.writeFile(fileUri, VSBuffer.fromString(content));
+				}
+				await this.editorService.openEditor({ resource: fileUri });
+			} catch (e) {
+				console.error(`Failed to update workspace file ${relPath}:`, e);
+			}
+		}
 	}
 
 	private async processFileActions(text: string): Promise<void> {
