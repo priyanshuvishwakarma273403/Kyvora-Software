@@ -105,12 +105,12 @@
 		"signUpUrl": "https://aka.ms/github-sign-up",
 		"provider": {
 			"default": {
-				"id": "github",
-				"name": "GitHub"
+				"id": "kyvora-auth",
+				"name": "Kyvora"
 			},
 			"enterprise": {
-				"id": "github-enterprise",
-				"name": "GHE"
+				"id": "kyvora-auth-enterprise",
+				"name": "Kyvora Enterprise"
 			},
 			"google": {
 				"id": "google",
@@ -121,7 +121,7 @@
 				"name": "Apple"
 			}
 		},
-		"providerExtensionId": "vscode.github-authentication",
+		"providerExtensionId": "kyvora.auth-provider",
 		"providerUriSetting": "github-enterprise.uri",
 		"providerScopes": [
 			[
