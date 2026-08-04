@@ -1700,8 +1700,43 @@ Please describe your thoughts first (without using emojis), then provide the fil
 
 				const textDiv = document.createElement('div');
 				textDiv.className = 'chat-text';
-				textDiv.textContent = text;
+				
+				let imageUrl = null;
+				let cleanText = text;
+				if (text.includes('[IMAGE_DATA_URL:')) {
+					const match = text.match(/\[IMAGE_DATA_URL:\s*([^\]]+)\s*\]/);
+					if (match && match[1]) {
+						imageUrl = match[1].replace(/\s/g, "");
+						cleanText = text.replace(/\[IMAGE_DATA_URL:\s*([^\]]+)\s*\]/g, "");
+					}
+				}
+
+				textDiv.textContent = cleanText;
 				bubble.appendChild(textDiv);
+
+				if (imageUrl) {
+					const imgDiv = document.createElement('div');
+					imgDiv.style.marginTop = '8px';
+					imgDiv.style.maxWidth = '100%';
+					imgDiv.style.border = '1px solid var(--border-subtle)';
+					imgDiv.style.borderRadius = '4px';
+					imgDiv.style.overflow = 'hidden';
+					imgDiv.style.background = 'var(--bg-deepest)';
+					imgDiv.style.padding = '4px';
+					imgDiv.style.display = 'flex';
+					imgDiv.style.justifyContent = 'center';
+
+					const img = document.createElement('img');
+					img.src = imageUrl;
+					img.alt = 'Shared Image';
+					img.style.maxHeight = '200px';
+					img.style.maxWidth = '100%';
+					img.style.objectFit = 'contain';
+					img.style.borderRadius = '2px';
+
+					imgDiv.appendChild(img);
+					bubble.appendChild(imgDiv);
+				}
 
 				if (suggestionsContainer) {
 					bubble.appendChild(suggestionsContainer);
@@ -1800,7 +1835,17 @@ Please describe your thoughts first (without using emojis), then provide the fil
 			const textDiv = document.createElement('div');
 			textDiv.className = 'chat-text';
 			
-			let formattedText = text
+			let imageUrl = null;
+			let cleanText = text;
+			if (text.includes('[IMAGE_DATA_URL:')) {
+				const match = text.match(/\[IMAGE_DATA_URL:\s*([^\]]+)\s*\]/);
+				if (match && match[1]) {
+					imageUrl = match[1].replace(/\s/g, "");
+					cleanText = text.replace(/\[IMAGE_DATA_URL:\s*([^\]]+)\s*\]/g, "");
+				}
+			}
+
+			let formattedText = cleanText
 				.replace(/&/g, "&amp;")
 				.replace(/</g, "&lt;")
 				.replace(/>/g, "&gt;");
@@ -1811,6 +1856,30 @@ Please describe your thoughts first (without using emojis), then provide the fil
 
 			textDiv.innerHTML = formattedText;
 			bubble.appendChild(textDiv);
+
+			if (imageUrl) {
+				const imgDiv = document.createElement('div');
+				imgDiv.style.marginTop = '8px';
+				imgDiv.style.maxWidth = '100%';
+				imgDiv.style.border = '1px solid var(--border-subtle)';
+				imgDiv.style.borderRadius = '4px';
+				imgDiv.style.overflow = 'hidden';
+				imgDiv.style.background = 'var(--bg-deepest)';
+				imgDiv.style.padding = '4px';
+				imgDiv.style.display = 'flex';
+				imgDiv.style.justifyContent = 'center';
+
+				const img = document.createElement('img');
+				img.src = imageUrl;
+				img.alt = 'Agent Generated Image';
+				img.style.maxHeight = '200px';
+				img.style.maxWidth = '100%';
+				img.style.objectFit = 'contain';
+				img.style.borderRadius = '2px';
+
+				imgDiv.appendChild(img);
+				bubble.appendChild(imgDiv);
+			}
 
 			const timeDiv = document.createElement('div');
 			timeDiv.className = 'chat-time';
