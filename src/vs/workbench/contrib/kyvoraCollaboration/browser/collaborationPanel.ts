@@ -1099,8 +1099,8 @@ Please describe your thoughts first (without using emojis), then provide the fil
 		<div id="loginCard" class="auth-card">
 			<div class="auth-title">Sign In to Kyvora</div>
 			<div class="input-group">
-				<label>Username</label>
-				<input type="text" id="loginUsername" placeholder="Enter username" />
+				<label>Username / Email</label>
+				<input type="text" id="loginUsername" placeholder="Enter username or email" />
 			</div>
 			<div class="input-group">
 				<label>Password</label>
@@ -1255,9 +1255,9 @@ Please describe your thoughts first (without using emojis), then provide the fil
 						<div class="ai-config-item">
 							<label>Mode</label>
 							<select id="aiMode" onchange="toggleAiModeFields()">
+								<option value="graph" selected>LangGraph Loop</option>
 								<option value="chat">Direct Chat</option>
 								<option value="agent">Single Agent</option>
-								<option value="graph">LangGraph Loop</option>
 							</select>
 						</div>
 						<div class="ai-config-item" id="aiAgentGroup" style="display: none;">
@@ -1429,17 +1429,25 @@ Please describe your thoughts first (without using emojis), then provide the fil
 		}
 
 		function submitGoogleLogin() {
-			const email = prompt('Enter your Google email to sign in:');
-			if (email && email.trim()) {
-				vscode.postMessage({ command: 'loginGoogle', email: email.trim() });
+			const emailInput = document.getElementById('loginUsername');
+			const email = emailInput.value.trim();
+			if (!email) {
+				showAlert('Please enter your email in the Username field first!', false);
+				emailInput.focus();
+				return;
 			}
+			vscode.postMessage({ command: 'loginGoogle', email: email });
 		}
 
 		function submitGithubLogin() {
-			const email = prompt('Enter your GitHub email to sign in:');
-			if (email && email.trim()) {
-				vscode.postMessage({ command: 'loginGithub', email: email.trim() });
+			const emailInput = document.getElementById('loginUsername');
+			const email = emailInput.value.trim();
+			if (!email) {
+				showAlert('Please enter your email in the Username field first!', false);
+				emailInput.focus();
+				return;
 			}
+			vscode.postMessage({ command: 'loginGithub', email: email });
 		}
 
 		function submitSignup() {
