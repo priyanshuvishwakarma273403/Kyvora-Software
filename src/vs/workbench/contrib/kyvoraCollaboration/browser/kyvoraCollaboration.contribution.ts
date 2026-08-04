@@ -18,10 +18,10 @@ import { KyvoraLoginInitializer } from './kyvoraLoginInitializer.js';
 registerSingleton(IKyvoraCollaborationService, KyvoraCollaborationService, InstantiationType.Delayed);
 
 // ---- Auto-Open Auxiliary Bar & Startup Login Screen ----
-// Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
-// 	KyvoraLoginInitializer,
-// 	LifecyclePhase.Restored
-// );
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(
+	KyvoraLoginInitializer,
+	LifecyclePhase.Restored
+);
 
 // ---- Register the View Container (sidebar icon) ----
 const kyvoraCollaborationViewContainer = Registry.as<IViewContainersRegistry>(ViewContainerExtensions.ViewContainersRegistry).registerViewContainer({
