@@ -46,7 +46,23 @@ import { GitHubPaths, IDefaultAccountService } from '../../../../../platform/def
 import product from '../../../../../platform/product/common/product.js';
 import { isCompletionsEnabled } from '../../../../../editor/common/services/completionsEnablement.js';
 
-const defaultChat = product.defaultChatAgent;
+const defaultChat = product.defaultChatAgent ?? {
+	provider: {
+		default: {
+			name: 'GitHub',
+			id: 'github',
+		},
+		enterprise: {
+			name: 'GitHub Enterprise',
+			id: 'github-enterprise',
+		}
+	},
+	termsStatementUrl: 'https://github.com/customer-terms',
+	privacyStatementUrl: 'https://github.com/privacy',
+	publicCodeMatchesUrl: 'https://github.com/settings/copilot',
+	providerUriSetting: 'github.copilot.enterprise.uri',
+	completionsEnablementSetting: 'github.copilot.enable',
+};
 
 interface ISettingsAccessor {
 	readSetting: () => boolean;

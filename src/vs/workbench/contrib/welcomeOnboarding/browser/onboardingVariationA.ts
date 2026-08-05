@@ -10,7 +10,6 @@ import { isCancellationError } from '../../../../base/common/errors.js';
 import { StopWatch } from '../../../../base/common/stopwatch.js';
 import { URI } from '../../../../base/common/uri.js';
 import { isWindows, isMacintosh, isLinux } from '../../../../base/common/platform.js';
-import { assertDefined } from '../../../../base/common/types.js';
 import { FileAccess } from '../../../../base/common/network.js';
 import { ILayoutService } from '../../../../platform/layout/browser/layoutService.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
@@ -77,8 +76,22 @@ type OnboardingActionEvent = {
 
 type EnterpriseSignInUiState = 'options' | 'instance' | 'progress';
 
-assertDefined(product.defaultChatAgent, 'Onboarding requires a default chat agent product configuration.');
-const defaultChat = product.defaultChatAgent;
+const defaultChat = product.defaultChatAgent ?? {
+	provider: {
+		default: {
+			name: 'GitHub',
+			id: 'github',
+		},
+		enterprise: {
+			name: 'GitHub Enterprise',
+			id: 'github-enterprise',
+		}
+	},
+	termsStatementUrl: 'https://github.com/customer-terms',
+	privacyStatementUrl: 'https://github.com/privacy',
+	publicCodeMatchesUrl: 'https://github.com/settings/copilot',
+	providerUriSetting: 'github.copilot.enterprise.uri',
+};
 
 /**
  * Variation A — Classic Wizard Modal

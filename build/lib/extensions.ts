@@ -592,14 +592,15 @@ export async function esbuildExtensions(taskName: string, isWatch: boolean, scri
 
 	const tasks = scripts.map(({ script, outputRoot }) => {
 		return new Promise<void>((resolve, reject) => {
-			const args = [script];
+						const cmd = process.platform === 'win32' ? 'npx.cmd' : 'npx';
+			const args = ['tsx', script];
 			if (isWatch) {
 				args.push('--watch');
 			}
 			if (outputRoot) {
 				args.push('--outputRoot', outputRoot);
 			}
-			const proc = cp.execFile(process.argv[0], args, {}, (error, _stdout, stderr) => {
+			const proc = cp.execFile(cmd, args, { shell: true }, (error, _stdout, stderr) => {
 				if (error) {
 					return reject(error);
 				}

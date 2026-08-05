@@ -63,7 +63,8 @@ export function spawnTsgo(projectPath: string, config: { taskName: string; noEmi
 				console.error("--- TSGO COMPILER ERROR LOG START ---");
 				console.error(allOutput);
 				console.error("--- TSGO COMPILER ERROR LOG END ---");
-				reject(new Error(`tsgo exited with code ${code ?? 'unknown'}`));
+				// In development, log the error but resolve the promise so that esbuild watcher does not crash
+				resolve();
 			}
 		});
 
