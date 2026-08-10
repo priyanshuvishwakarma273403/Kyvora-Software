@@ -1624,6 +1624,50 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 			this._initDimensions();
 			this.xterm?.resize(this._cols || Constants.DefaultCols, this._rows || Constants.DefaultRows);
 		}
+
+		// Prepare launch config
+		const showWelcome = this._configurationService.getValue<boolean>('kyvora.terminal.welcomeScreen.enabled') ?? true;
+		if (showWelcome && !this._shellLaunchConfig.hideFromUser && !this._shellLaunchConfig.isFeatureTerminal) {
+			const isWindowsPlatform = OS === OperatingSystem.Windows;
+			const executable = this._shellLaunchConfig.executable || '';
+			const isPowerShell = !executable || 
+								 executable.toLowerCase().includes('powershell') || 
+								 executable.toLowerCase().includes('pwsh') ||
+								 executable.toLowerCase().includes('powershell.exe') ||
+								 executable.toLowerCase().includes('pwsh.exe');
+			
+			if (isWindowsPlatform && isPowerShell) {
+				const isTrusted = (() => {
+					try {
+						return (this._workspaceTrustRequestService as any).isWorkspaceTrusted?.() ?? true;
+					} catch {
+						return true;
+					}
+				})();
+
+				const welcomeText = getWelcomeScreenText({
+					workspaceName: this._workspaceContextService.getWorkspace().folders[0]?.name || 'Kyvora Workspace',
+					gitBranch: this._gitBranch,
+					currentTime: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+					osName: 'Windows',
+					nodeVer: typeof process !== 'undefined' ? process.version : 'v18.17.1',
+					javaVer: this._javaVer,
+					aiModel: this._configurationService.getValue<string>('kyvora.ai.model') || 'mixtral-8x7b-32768',
+					isTrusted,
+					themeService: this._themeService,
+					configurationService: this._configurationService,
+					cols: this._cols || Constants.DefaultCols
+				});
+
+				// Inject as environment variable
+				this._shellLaunchConfig.env ??= {};
+				this._shellLaunchConfig.env['KYVORA_WELCOME_BANNER'] = welcomeText;
+				
+				// Bypass client-side banner injection
+				this._welcomeScreenPrinted = true;
+			}
+		}
+
 		const originalIcon = this.shellLaunchConfig.icon;
 		await this._processManager.createProcess(this._shellLaunchConfig, this._cols || Constants.DefaultCols, this._rows || Constants.DefaultRows).then(result => {
 			if (result) {

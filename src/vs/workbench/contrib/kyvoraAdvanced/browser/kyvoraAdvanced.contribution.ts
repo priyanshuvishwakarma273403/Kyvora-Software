@@ -56,8 +56,8 @@ configurationRegistry.registerConfiguration({
 		'kyvora.terminal.welcomeScreen.enabled': {
 			scope: ConfigurationScope.APPLICATION,
 			type: 'boolean',
-			default: !isWindows,
-			markdownDescription: localize('kyvora.terminal.welcomeScreen.enabled', "Controls whether the custom Kyvora terminal welcome banner is printed when creating a new terminal session. On Windows, this defaults to false to prevent layout overlaps and prompt corruption.")
+			default: true,
+			markdownDescription: localize('kyvora.terminal.welcomeScreen.enabled', "Controls whether the custom Kyvora terminal welcome banner is printed when creating a new terminal session.")
 		},
 		'kyvora.terminal.welcomeTheme': {
 			scope: ConfigurationScope.APPLICATION,

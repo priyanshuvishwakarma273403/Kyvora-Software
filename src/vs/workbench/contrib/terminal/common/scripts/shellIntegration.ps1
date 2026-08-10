@@ -288,3 +288,10 @@ if ($Global:__VSCodeState.HasPSReadLine) {
 		$env:VSCODE_PREVENT_SHELL_HISTORY = $null
 	}
 }
+
+# Print Kyvora Welcome Banner if present
+if ($env:KYVORA_WELCOME_BANNER) {
+	[Console]::Write($env:KYVORA_WELCOME_BANNER)
+	$env:KYVORA_WELCOME_BANNER = $null
+}
+
