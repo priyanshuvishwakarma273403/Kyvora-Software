@@ -131,24 +131,39 @@ export function getWelcomeScreenText(options: {
 	const lines: string[] = [];
 	lines.push('');
 
-	// Left align Eagle as a block
-	lines.push(...leftAlignBlock(EAGLE_ASCII, ec, rst, 4));
-	lines.push('');
+	const showEagle = options.cols >= 90;
+	const showLogo = options.cols >= 60;
 
-	// Left align KYVORA Logo as a block
-	lines.push(...leftAlignBlock(LOGO_ASCII, lc, rst, 4));
-	lines.push('');
+	if (showEagle) {
+		// Left align Eagle as a block
+		lines.push(...leftAlignBlock(EAGLE_ASCII, ec, rst, 4, options.cols));
+		lines.push('');
+	}
+
+	if (showLogo) {
+		// Left align KYVORA Logo as a block
+		lines.push(...leftAlignBlock(LOGO_ASCII, lc, rst, 4, options.cols));
+		lines.push('');
+	} else {
+		// Print a clean, single-line text welcome for narrow screens
+		lines.push(`    ${lc}KYVORA STUDIO${rst}`);
+		lines.push(`    Workspace: \x1b[38;5;105m${options.workspaceName}${rst}`);
+		lines.push('');
+	}
 
 	return lines.join('\r\n');
 }
 
-function leftAlignBlock(art: string, colorPrefix: string, colorSuffix: string, leftMargin: number = 4): string[] {
+function leftAlignBlock(art: string, colorPrefix: string, colorSuffix: string, leftMargin: number = 4, maxCols: number = 80): string[] {
 	const lines = art.split('\n');
 	const padding = ' '.repeat(leftMargin);
+	const maxLineLength = Math.max(10, maxCols - leftMargin - 2);
+
 	return lines.map(line => {
 		if (!line.trim()) {
 			return '';
 		}
-		return padding + colorPrefix + line + colorSuffix;
+		const truncatedLine = line.length > maxLineLength ? line.substring(0, maxLineLength) : line;
+		return padding + colorPrefix + truncatedLine + colorSuffix;
 	});
 }

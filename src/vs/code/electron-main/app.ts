@@ -311,7 +311,10 @@ export class CodeApplication extends Disposable {
 
 		const isAllowedVsCodeFileRequest = (details: Electron.OnBeforeRequestListenerDetails) => {
 			const frame = details.frame;
-			if (!frame || !this.windowsMainService) {
+			if (!frame) {
+				return true;
+			}
+			if (!this.windowsMainService) {
 				return false;
 			}
 

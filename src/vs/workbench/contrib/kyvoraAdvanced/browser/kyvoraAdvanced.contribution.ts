@@ -43,3 +43,28 @@ viewsRegistry.registerViews([{
 	canMoveView: false,
 	order: 1
 }], kyvoraAdvancedViewContainer);
+
+// ---- Register Configuration Settings ----
+import { ConfigurationScope, Extensions as ConfigurationExtensions, IConfigurationRegistry } from '../../../../platform/configuration/common/configurationRegistry.js';
+import { workbenchConfigurationNodeBase } from '../../../common/configuration.js';
+import { isWindows } from '../../../../base/common/platform.js';
+
+const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
+configurationRegistry.registerConfiguration({
+	...workbenchConfigurationNodeBase,
+	properties: {
+		'kyvora.terminal.welcomeScreen.enabled': {
+			scope: ConfigurationScope.APPLICATION,
+			type: 'boolean',
+			default: !isWindows,
+			markdownDescription: localize('kyvora.terminal.welcomeScreen.enabled', "Controls whether the custom Kyvora terminal welcome banner is printed when creating a new terminal session. On Windows, this defaults to false to prevent layout overlaps and prompt corruption.")
+		},
+		'kyvora.terminal.welcomeTheme': {
+			scope: ConfigurationScope.APPLICATION,
+			type: 'string',
+			enum: ['default', 'cyberpunk', 'matrix', 'holiday', 'monochrome'],
+			default: 'default',
+			description: localize('kyvora.terminal.welcomeTheme', "The color theme applied to the Kyvora terminal welcome screen banner.")
+		}
+	}
+});

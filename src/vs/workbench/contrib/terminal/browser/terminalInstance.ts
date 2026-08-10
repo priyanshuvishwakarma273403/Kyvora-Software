@@ -1661,68 +1661,81 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 	}
 
 	private _onProcessData(ev: IProcessDataEvent): void {
-		if (!this._welcomeScreenPrinted && !this._shellLaunchConfig.hideFromUser && !this._shellLaunchConfig.isFeatureTerminal) {
+		// Disable welcome screen on Windows by default to prevent ConPTY absolute cursor positioning overlaps/corruption
+		const showWelcome = this._configurationService.getValue<boolean>('kyvora.terminal.welcomeScreen.enabled') ?? (OS !== OperatingSystem.Windows);
+		if (showWelcome && !this._welcomeScreenPrinted && !this._shellLaunchConfig.hideFromUser && !this._shellLaunchConfig.isFeatureTerminal) {
 			if (!this._welcomeScreenPrinting) {
 				this._welcomeScreenPrinting = true;
 				this._earlyProcessDataBuffer.push(ev);
-				this._welcomeDataPromise.then(() => {
-					const isTrusted = (() => {
-						try {
-							return (this._workspaceTrustRequestService as any).isWorkspaceTrusted?.() ?? true;
-						} catch {
-							return true;
-						}
-					})();
 
-					const welcomeText = getWelcomeScreenText({
-						workspaceName: this._workspaceContextService.getWorkspace().folders[0]?.name || 'Kyvora Workspace',
-						gitBranch: this._gitBranch,
-						currentTime: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-						osName: OS === OperatingSystem.Windows ? 'Windows' : OS === OperatingSystem.Macintosh ? 'macOS' : 'Linux',
-						nodeVer: typeof process !== 'undefined' ? process.version : 'v18.17.1',
-						javaVer: this._javaVer,
-						aiModel: this._configurationService.getValue<string>('kyvora.ai.model') || 'mixtral-8x7b-32768',
-						isTrusted,
-						themeService: this._themeService,
-						configurationService: this._configurationService,
-						cols: this.xterm?.raw.cols || 80
+				// Delay the welcome screen printing to allow the terminal layout to stabilize (e.g. 150ms)
+				// This prevents resize/reflow races that cause text wrapping/overlap issues upon terminal creation
+				setTimeout(() => {
+					if (this._isExiting || !this.xterm) {
+						return;
+					}
+					this._welcomeDataPromise.then(() => {
+						if (this._isExiting || !this.xterm) {
+							return;
+						}
+						const isTrusted = (() => {
+							try {
+								return (this._workspaceTrustRequestService as any).isWorkspaceTrusted?.() ?? true;
+							} catch {
+								return true;
+							}
+						})();
+
+						const welcomeText = getWelcomeScreenText({
+							workspaceName: this._workspaceContextService.getWorkspace().folders[0]?.name || 'Kyvora Workspace',
+							gitBranch: this._gitBranch,
+							currentTime: new Date().toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+							osName: OS === OperatingSystem.Windows ? 'Windows' : OS === OperatingSystem.Macintosh ? 'macOS' : 'Linux',
+							nodeVer: typeof process !== 'undefined' ? process.version : 'v18.17.1',
+							javaVer: this._javaVer,
+							aiModel: this._configurationService.getValue<string>('kyvora.ai.model') || 'mixtral-8x7b-32768',
+							isTrusted,
+							themeService: this._themeService,
+							configurationService: this._configurationService,
+							cols: this.xterm?.raw.cols || 80
+						});
+
+						// Check if we should reset/clear the terminal first
+						let shouldReset = false;
+						let shouldClear = false;
+						if (this._earlyProcessDataBuffer[0]) {
+							const firstData = this._earlyProcessDataBuffer[0].data;
+							if (firstData.includes('\x1bc')) {
+								shouldReset = true;
+							}
+							if (firstData.includes('\x1b[2J') || firstData.includes('\x1b[H\x1b[2J')) {
+								shouldClear = true;
+							}
+						}
+
+						if (shouldReset) {
+							this._writeProcessData('\x1bc');
+						} else if (shouldClear) {
+							this._writeProcessData('\x1b[H\x1b[2J');
+						}
+
+						// Now print the welcome banner
+						this._writeProcessData(welcomeText + '\r\n');
+						this._welcomeScreenPrinted = true;
+
+						// Continue with the remaining buffered process data, stripping clear/reset/cursor-home codes
+						for (const bufferedEv of this._earlyProcessDataBuffer) {
+							const cleanedData = bufferedEv.data
+								.replace(/\x1bc/g, '')
+								.replace(/\x1b\[2J/g, '')
+								.replace(/\x1b\[H\x1b\[2J/g, '')
+								.replace(/\x1b\[H\x1b\[J/g, '')
+								.replace(/\x1b\[(?:\d*;\d*)?[Hf]/g, '');
+							this._continueOnProcessData({ ...bufferedEv, data: cleanedData });
+						}
+						this._earlyProcessDataBuffer = [];
 					});
-
-					// Check if we should reset/clear the terminal first
-					let shouldReset = false;
-					let shouldClear = false;
-					if (this._earlyProcessDataBuffer[0]) {
-						const firstData = this._earlyProcessDataBuffer[0].data;
-						if (firstData.includes('\x1bc')) {
-							shouldReset = true;
-						}
-						if (firstData.includes('\x1b[2J') || firstData.includes('\x1b[H\x1b[2J')) {
-							shouldClear = true;
-						}
-					}
-
-					if (shouldReset) {
-						this._writeProcessData('\x1bc');
-					} else if (shouldClear) {
-						this._writeProcessData('\x1b[H\x1b[2J');
-					}
-
-					// Now print the welcome banner
-					this._writeProcessData(welcomeText + '\r\n');
-					this._welcomeScreenPrinted = true;
-
-					// Continue with the remaining buffered process data, stripping clear/reset/cursor-home codes
-					for (const bufferedEv of this._earlyProcessDataBuffer) {
-						const cleanedData = bufferedEv.data
-							.replace(/\x1bc/g, '')
-							.replace(/\x1b\[2J/g, '')
-							.replace(/\x1b\[H\x1b\[2J/g, '')
-							.replace(/\x1b\[H\x1b\[J/g, '')
-							.replace(/\x1b\[(?:\d*;\d*)?[Hf]/g, '');
-						this._continueOnProcessData({ ...bufferedEv, data: cleanedData });
-					}
-					this._earlyProcessDataBuffer = [];
-				});
+				}, 150);
 			} else {
 				this._earlyProcessDataBuffer.push(ev);
 			}

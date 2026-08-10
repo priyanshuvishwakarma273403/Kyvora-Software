@@ -47,6 +47,7 @@ import {
 	parseGheInstanceInput,
 } from '../common/onboardingTypes.js';
 import { IOnboardingService } from '../common/onboardingService.js';
+import { IKyvoraCollaborationService } from '../../kyvoraCollaboration/common/kyvoraCollaborationService.js';
 
 type OnboardingStepViewClassification = {
 	owner: 'cwebster-99';
@@ -160,8 +161,19 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
 		@ITelemetryService private readonly telemetryService: ITelemetryService,
 		@ICommandService private readonly commandService: ICommandService,
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
+		@IKyvoraCollaborationService private readonly collabService: IKyvoraCollaborationService,
 	) {
 		super();
+
+		this._userSignedIn = this.collabService.isLoggedIn();
+
+		this.disposables.add(this.collabService.onDidSessionChange(() => {
+			this._userSignedIn = this.collabService.isLoggedIn();
+			if (this.overlay && this.steps[this.currentStepIndex] === OnboardingStepId.SignIn) {
+				this._renderStep();
+				this._updateButtonStates();
+			}
+		}));
 
 		// Detect currently active theme
 		const currentTheme = this.themeService.getColorTheme();
@@ -495,7 +507,7 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
 		title.textContent = localize('onboarding.signIn.heroTitle', "Welcome to Kyvora");
 
 		const subtitle = append(contentMain, $('p.onboarding-a-signin-subtitle'));
-		subtitle.textContent = localize('onboarding.signIn.heroSubtitle', "Sign in to use GitHub Copilot.");
+		subtitle.textContent = localize('onboarding.signIn.heroSubtitle', "Sign in to access Kyvora AI features and collaborative workspaces.");
 
 		const actions = append(contentMain, $('.onboarding-a-signin-actions'));
 
@@ -524,56 +536,55 @@ export class OnboardingVariationA extends Disposable implements IOnboardingServi
 
 		const disclaimerCol = append(footer, $('.onboarding-a-signin-disclaimer-col'));
 
-		// GitHub Copilot disclaimer
+		// Kyvora disclaimer
 		const copilotDisclaimer = append(disclaimerCol, $('.onboarding-a-signin-disclaimer'));
-		copilotDisclaimer.append(localize('onboarding.signIn.disclaimer.prefix', "By signing in, you agree to {0}'s ", defaultChat.provider.default.name));
-		this._createInlineLink(copilotDisclaimer, localize('onboarding.signIn.disclaimer.terms', "Terms"), defaultChat.termsStatementUrl);
-		copilotDisclaimer.append(localize('onboarding.signIn.disclaimer.middle', " and "));
-		this._createInlineLink(copilotDisclaimer, localize('onboarding.signIn.disclaimer.privacy', "Privacy Statement"), defaultChat.privacyStatementUrl);
-		copilotDisclaimer.append(localize('onboarding.signIn.disclaimer.copilotPrefix', ". {0} Copilot may show ", defaultChat.provider.default.name));
-		this._createInlineLink(copilotDisclaimer, localize('onboarding.signIn.disclaimer.publicCode', "public code"), defaultChat.publicCodeMatchesUrl);
-		copilotDisclaimer.append(localize('onboarding.signIn.disclaimer.improveSuffix', " suggestions and use your data to improve the product."));
-		copilotDisclaimer.append(' ');
-		copilotDisclaimer.append(localize('onboarding.signIn.disclaimer.settingsPrefix', "You can change these "));
-		this._createInlineLink(copilotDisclaimer, localize('onboarding.signIn.disclaimer.settings', "settings"), this.defaultAccountService.resolveGitHubUrl(GitHubPaths.copilotSettings));
-		copilotDisclaimer.append(localize('onboarding.signIn.disclaimer.suffix', " anytime."));
+		copilotDisclaimer.append(localize('onboarding.signIn.disclaimer.prefix', "By signing in, you agree to Kyvora's Terms of Service and Privacy Policy."));
 	}
 
 	private _renderDefaultSignInActions(actions: HTMLElement): void {
-		const githubBtn = this._registerStepFocusable(this._createSignInButton(actions, 'github', localize('onboarding.signIn.github', "Continue with GitHub"), {
+		const signInBtn = this._registerStepFocusable(this._createSignInButton(actions, 'github', localize('onboarding.signIn.kyvora', "Sign In to Kyvora"), {
 			emphasized: true,
-			label: localize('onboarding.signIn.github.aria', "Continue with GitHub")
+			label: localize('onboarding.signIn.kyvora.aria', "Sign In to Kyvora")
 		}));
-		this.stepDisposables.add(addDisposableListener(githubBtn, EventType.CLICK, () => {
-			this._logAction('signIn', undefined, 'github');
-			this._handleSignIn();
+		this.stepDisposables.add(addDisposableListener(signInBtn, EventType.CLICK, () => {
+			this._logAction('signIn', undefined, 'kyvora');
+			void this.commandService.executeCommand('kyvora.showLogin');
 		}));
 
 		const googleBtn = this._registerStepFocusable(this._createSignInButton(actions, 'google', localize('onboarding.signIn.google', "Continue with Google"), {
 			iconOnly: true,
 			label: localize('onboarding.signIn.google', "Continue with Google")
 		}));
-		this.stepDisposables.add(addDisposableListener(googleBtn, EventType.CLICK, () => {
+		this.stepDisposables.add(addDisposableListener(googleBtn, EventType.CLICK, async () => {
 			this._logAction('signIn', undefined, 'google');
-			this._handleSignIn('google');
+			const email = prompt("Enter your Google Account Email to simulate OAuth authentication:", "user@gmail.com");
+			if (email) {
+				const success = await this.collabService.loginWithGoogle(email);
+				if (success) {
+					this._userSignedIn = true;
+					this._nextStep();
+				} else {
+					this.notificationService.error(localize('onboarding.signIn.google.error', "Simulated Google login failed."));
+				}
+			}
 		}));
 
-		const appleBtn = this._registerStepFocusable(this._createSignInButton(actions, 'apple', localize('onboarding.signIn.apple', "Continue with Apple"), {
+		const githubBtn = this._registerStepFocusable(this._createSignInButton(actions, 'github-enterprise', localize('onboarding.signIn.github', "Continue with GitHub"), {
 			iconOnly: true,
-			label: localize('onboarding.signIn.apple', "Continue with Apple")
+			label: localize('onboarding.signIn.github', "Continue with GitHub")
 		}));
-		this.stepDisposables.add(addDisposableListener(appleBtn, EventType.CLICK, () => {
-			this._logAction('signIn', undefined, 'apple');
-			this._handleSignIn('apple');
-		}));
-
-		const gheBtn = this._registerStepFocusable(this._createSignInButton(actions, 'github-enterprise', localize('onboarding.signIn.ghe', "GHE"), {
-			textOnly: true,
-			label: localize('onboarding.signIn.ghe.aria', "Continue with GitHub Enterprise")
-		}));
-		this.stepDisposables.add(addDisposableListener(gheBtn, EventType.CLICK, () => {
-			this._logAction('signIn', undefined, 'github-enterprise');
-			void this._handleEnterpriseSignIn();
+		this.stepDisposables.add(addDisposableListener(githubBtn, EventType.CLICK, async () => {
+			this._logAction('signIn', undefined, 'github');
+			const email = prompt("Enter your GitHub Account Email to simulate OAuth authentication:", "user@github.com");
+			if (email) {
+				const success = await this.collabService.loginWithGithub(email);
+				if (success) {
+					this._userSignedIn = true;
+					this._nextStep();
+				} else {
+					this.notificationService.error(localize('onboarding.signIn.github.error', "Simulated GitHub login failed."));
+				}
+			}
 		}));
 	}
 

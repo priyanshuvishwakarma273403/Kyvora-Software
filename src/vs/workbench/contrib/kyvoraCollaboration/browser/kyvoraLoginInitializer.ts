@@ -5,6 +5,7 @@
 import { IWorkbenchContribution } from '../../../common/contributions.js';
 import { IKyvoraCollaborationService } from '../common/kyvoraCollaborationService.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
+import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
 
 export class KyvoraLoginInitializer extends Disposable implements IWorkbenchContribution {
 	private overlay: HTMLDivElement | null = null;
@@ -15,6 +16,9 @@ export class KyvoraLoginInitializer extends Disposable implements IWorkbenchCont
 	) {
 		super();
 		this.checkLoginStatus();
+		this._register(CommandsRegistry.registerCommand('kyvora.showLogin', () => {
+			this.showLoginOverlay();
+		}));
 	}
 
 	private checkLoginStatus(): void {
