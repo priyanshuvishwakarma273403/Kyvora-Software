@@ -1706,7 +1706,7 @@ export class TerminalInstance extends Disposable implements ITerminalInstance {
 
 	private _onProcessData(ev: IProcessDataEvent): void {
 		// Disable welcome screen on Windows by default to prevent ConPTY absolute cursor positioning overlaps/corruption
-		const showWelcome = this._configurationService.getValue<boolean>('kyvora.terminal.welcomeScreen.enabled') ?? (OS !== OperatingSystem.Windows);
+		const showWelcome = this._configurationService.getValue<boolean>('kyvora.terminal.welcomeScreen.enabled') ?? true;
 		if (showWelcome && !this._welcomeScreenPrinted && !this._shellLaunchConfig.hideFromUser && !this._shellLaunchConfig.isFeatureTerminal) {
 			if (!this._welcomeScreenPrinting) {
 				this._welcomeScreenPrinting = true;
