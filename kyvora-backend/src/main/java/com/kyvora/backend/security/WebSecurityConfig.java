@@ -64,7 +64,7 @@ public class WebSecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 .requestMatchers("/ws/**", "/ws-collaboration/**").permitAll()
-                .requestMatchers("/api/v1/ai/completion", "/api/v1/ai/chat").permitAll() // AI completion calls (authorized via internal keys)
+                .requestMatchers("/api/v1/ai/**").authenticated() // Secure all AI endpoints
                 .requestMatchers("/api/v1/rag/**").permitAll() // RAG Vector DB endpoints
                 .anyRequest().authenticated()
             );

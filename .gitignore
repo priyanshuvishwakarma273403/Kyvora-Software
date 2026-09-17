@@ -49,6 +49,11 @@ yarn-error.log*
 logs/
 *.log
 
+# Tools & Maven binaries
+apache-maven-*/
+.idea/
+scratch/
+
 # OS Metadata
 .DS_Store
 Thumbs.db

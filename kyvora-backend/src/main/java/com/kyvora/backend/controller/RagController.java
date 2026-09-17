@@ -77,4 +77,28 @@ public class RagController {
         ragVectorDbService.clearStore();
         return ResponseEntity.ok(Map.of("success", true, "message", "Vector database cleared"));
     }
+
+    @GetMapping("/understand")
+    public ResponseEntity<?> understandProject() {
+        try {
+            return ResponseEntity.ok(ragVectorDbService.getRepositoryExplanation());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @Data
+    public static class DebugRequest {
+        private String exception;
+        private String stackTrace;
+    }
+
+    @PostMapping("/debug")
+    public ResponseEntity<?> diagnoseError(@RequestBody DebugRequest request) {
+        try {
+            return ResponseEntity.ok(ragVectorDbService.diagnoseError(request.getException(), request.getStackTrace()));
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of("error", e.getMessage()));
+        }
+    }
 }

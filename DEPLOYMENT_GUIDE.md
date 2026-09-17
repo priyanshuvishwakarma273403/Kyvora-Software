@@ -119,3 +119,79 @@ graph TD
     *   `/api/v1/admin/users` is strictly locked to users with the `ADMIN` role. If a normal `USER` tries to call it, Spring returns a `403 Forbidden` response.
 
 docker-compose up --build -d
+
+---
+
+## 💻 Kyvora Desktop Application Build & Release Guide
+
+Kyvora Studio is packaged and compiled using a customized high-performance esbuild and Gulp pipeline based on Electron.
+
+### ⚙️ Prerequisites
+Ensure you have the following installed:
+- **Node.js** (v20+)
+- **Yarn** (v1.x) or **npm** (v10+)
+- **Inno Setup** (for building the Windows `.exe` installer)
+
+---
+
+### 🔨 1. How to Build & Run Locally (Dev Mode)
+To launch Kyvora Studio in development mode with live transpilation:
+
+1. **Start the background watcher & transpiler:**
+   ```bash
+   yarn watch
+   # or
+   npm run watch
+   ```
+2. **Launch the Electron application client:**
+   In a separate terminal, run:
+   ```powershell
+   .\scripts\code.bat
+   ```
+
+---
+
+### 📦 2. How to Compile the Production Release
+To build and package optimized production binaries for different platforms, use the respective Gulp commands:
+
+#### 🪟 Windows (x64)
+1. **Compile and package the desktop client:**
+   This creates a standalone portable build under `D:\Cursor-clone\VSCode-win32-x64`:
+   ```bash
+   npm run gulp vscode-win32-x64
+   ```
+2. **Copy the Inno Setup updater executables:**
+   ```bash
+   npm run gulp vscode-win32-x64-inno-updater
+   ```
+3. **Build the `.exe` setup installer:**
+   This compiles the installer to `D:\Cursor-clone\kyvora\.build\win32-x64\user-setup\VSCodeSetup.exe`:
+   ```bash
+   npm run gulp vscode-win32-x64-user-setup
+   ```
+
+#### 🐧 Linux (x64)
+To package Kyvora Studio for Linux x64 distributions:
+```bash
+npm run gulp vscode-linux-x64
+```
+*Output Directory:* `D:\Cursor-clone\VSCode-linux-x64`
+
+#### 🍎 macOS (x64 / ARM64)
+To package Kyvora Studio for Apple platforms:
+- **macOS Intel (x64):**
+  ```bash
+  npm run gulp vscode-darwin-x64
+  ```
+- **macOS Apple Silicon (ARM64):**
+  ```bash
+  npm run gulp vscode-darwin-arm64
+  ```
+*Output Directory:* `D:\Cursor-clone\VSCode-darwin-x64` or `D:\Cursor-clone\VSCode-darwin-arm64`
+
+---
+
+### 🔍 3. Asset Loading & Protocol Fix
+In custom builds of Electron applications, asset files (logos, SVGs, loading states) are loaded via the secure `vscode-file://` protocol. 
+
+In production environments, standard security policies block frame-less requests. We have modified `src/vs/code/electron-main/app.ts` to allow requests originating from dynamic modules without frame contexts (`!frame`), resolving any missing image, icon, or logo rendering issues in the final installed application.

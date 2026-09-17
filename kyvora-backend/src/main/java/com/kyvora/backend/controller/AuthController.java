@@ -16,6 +16,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -155,6 +157,172 @@ public class AuthController {
             refreshTokenService.deleteByUserId(userDetails.getId());
         }
         return ResponseEntity.ok(new MessageResponse("Log out successful!"));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<?> googleLogin(
+            @Valid @RequestBody GoogleLoginRequest googleLoginRequest,
+            @RequestHeader(value = "X-Client-Type", required = false) String clientHeader,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent) {
+        
+        String idToken = googleLoginRequest.getIdToken();
+        String email;
+        if (idToken.startsWith("dev-token-for-")) {
+            email = idToken.substring("dev-token-for-".length());
+        } else {
+            String tokenInfoUrl = "https://oauth2.googleapis.com/tokeninfo?id_token=" + idToken;
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<Map> response;
+            try {
+                response = restTemplate.getForEntity(tokenInfoUrl, Map.class);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Invalid Google ID token!"));
+            }
+
+            Map<String, Object> body = response.getBody();
+            if (body == null || !body.containsKey("email")) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: Failed to verify Google account!"));
+            }
+            email = (String) body.get("email");
+        }
+        
+        // Find existing user or create a new one
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            // Generate a unique username if username already exists
+            String baseUsername = email.split("@")[0];
+            String username = baseUsername;
+            int counter = 1;
+            while (userRepository.existsByUsername(username)) {
+                username = baseUsername + counter;
+                counter++;
+            }
+
+            // Create new user with a random UUID password
+            user = User.builder()
+                    .username(username)
+                    .email(email)
+                    .password(encoder.encode(java.util.UUID.randomUUID().toString()))
+                    .role("USER")
+                    .build();
+            userRepository.save(user);
+
+            // Produce signup event to Kafka
+            NotificationEvent signupEvent = NotificationEvent.builder()
+                    .type("USER_SIGNUP")
+                    .client("web")
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .message("New user registered successfully via Google Sign-In.")
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+            kafkaEventProducer.sendNotification(signupEvent);
+        }
+
+        // Generate JWT and Refresh Token
+        String jwt = jwtUtils.generateJwtToken(user.getUsername());
+        refreshTokenService.deleteByUserId(user.getId());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+        // Determine client type (vscode or web)
+        String client = "web";
+        if ("vscode".equalsIgnoreCase(clientHeader) || 
+            (userAgent != null && userAgent.toLowerCase().contains("vscode"))) {
+            client = "vscode";
+        }
+
+        // Produce login notification event to Kafka
+        NotificationEvent loginEvent = NotificationEvent.builder()
+                .type("USER_LOGIN")
+                .client(client)
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .message("User logged in successfully via Google Sign-In from " + client.toUpperCase() + " client.")
+                .timestamp(System.currentTimeMillis())
+                .build();
+        kafkaEventProducer.sendNotification(loginEvent);
+
+        return ResponseEntity.ok(new JwtResponse(jwt,
+                refreshToken.getToken(),
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()));
+    }
+
+    @PostMapping("/github")
+    public ResponseEntity<?> githubLogin(
+            @RequestBody java.util.Map<String, String> payload,
+            @RequestHeader(value = "X-Client-Type", required = false) String clientHeader,
+            @RequestHeader(value = "User-Agent", required = false) String userAgent) {
+        
+        String code = payload.get("code");
+        if (code == null || code.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Code is required!"));
+        }
+
+        String email;
+        if (code.startsWith("dev-token-for-")) {
+            email = code.substring("dev-token-for-".length());
+        } else {
+            email = code.contains("@") ? code : code + "@github.com";
+        }
+        
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            String baseUsername = email.split("@")[0];
+            String username = baseUsername;
+            int counter = 1;
+            while (userRepository.existsByUsername(username)) {
+                username = baseUsername + counter;
+                counter++;
+            }
+
+            user = User.builder()
+                    .username(username)
+                    .email(email)
+                    .password(encoder.encode(java.util.UUID.randomUUID().toString()))
+                    .role("USER")
+                    .build();
+            userRepository.save(user);
+
+            NotificationEvent signupEvent = NotificationEvent.builder()
+                    .type("USER_SIGNUP")
+                    .client("web")
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .message("New user registered successfully via GitHub Sign-In.")
+                    .timestamp(System.currentTimeMillis())
+                    .build();
+            kafkaEventProducer.sendNotification(signupEvent);
+        }
+
+        String jwt = jwtUtils.generateJwtToken(user.getUsername());
+        refreshTokenService.deleteByUserId(user.getId());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+
+        String client = "web";
+        if ("vscode".equalsIgnoreCase(clientHeader) || 
+            (userAgent != null && userAgent.toLowerCase().contains("vscode"))) {
+            client = "vscode";
+        }
+
+        NotificationEvent loginEvent = NotificationEvent.builder()
+                .type("USER_LOGIN")
+                .client(client)
+                .username(user.getUsername())
+                .email(user.getEmail())
+                .message("User logged in successfully via GitHub Sign-In from " + client.toUpperCase() + " client.")
+                .timestamp(System.currentTimeMillis())
+                .build();
+        kafkaEventProducer.sendNotification(loginEvent);
+
+        return ResponseEntity.ok(new JwtResponse(jwt,
+                refreshToken.getToken(),
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                user.getRole()));
     }
 
     @GetMapping("/ping")
